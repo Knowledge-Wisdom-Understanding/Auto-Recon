@@ -1,4 +1,4 @@
-# Hack-The-Box-Tools
+# AUTO-RECON
 ## Easy to use Recon script for Enumeration in Kali Linux
 
 recon.sh requires dirsearch to be installed in the /opt folder.
