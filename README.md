@@ -4,6 +4,7 @@
 recon.sh requires dirsearch to be installed in the /opt folder.
 ### To install Dependencies, simply run this command in your /opt folder:
 ``` 
+cd /opt
 git clone https://github.com/maurosoria/dirsearch.git
 ```
 Also, if you don't already have it installed, you can use gobuster instead of dirsearch.
