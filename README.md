@@ -4,8 +4,6 @@
 ![alt text](https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon/blob/master/auto-recon.PNG)
 
 
-recon.sh requires dirsearch to be installed in the /opt folder.
-
 ### INSTALLATION
 ```
 cd /opt
@@ -13,7 +11,7 @@ git clone https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon.git
 cd Auto-Recon
 chmod +x recon.sh
 ```
-
+recon.sh requires dirsearch to be installed in the /opt folder.
 ### To install Dependencies, simply run these commands in your /opt folder:
 ``` 
 cd /opt
