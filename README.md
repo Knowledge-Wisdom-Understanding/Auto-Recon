@@ -1,5 +1,5 @@
 # AUTO-RECON
-## Easy to use Recon script for Enumeration in Kali Linux
+## Easy to use script for Information-Gathering in Kali Linux
 
 recon.sh requires dirsearch to be installed in the /opt folder.
 ### To install Dependencies, simply run this command in your /opt folder:
