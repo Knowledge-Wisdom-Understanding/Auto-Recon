@@ -1,6 +1,7 @@
 # AUTO-RECON
 ## Easy to use script for Information-Gathering in Kali Linux
 
+![alt text](https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon/blob/master/auto-recon.PNG)
 recon.sh requires dirsearch to be installed in the /opt folder.
 ### To install Dependencies, simply run this command in your /opt folder:
 ``` 
