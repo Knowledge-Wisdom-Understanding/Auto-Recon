@@ -1,5 +1,5 @@
 # AUTO-RECON
-## Easy to use script for Information-Gathering in Kali Linux
+## Easy to use script to quickly scan a Target in Kali Linux
 
 ![alt text](https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon/blob/master/auto-recon.PNG)
 
