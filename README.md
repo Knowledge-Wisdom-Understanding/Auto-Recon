@@ -5,7 +5,7 @@
 
 
 recon.sh requires dirsearch to be installed in the /opt folder.
-### To install Dependencies, simply run this command in your /opt folder:
+### To install Dependencies, simply run these commands in your /opt folder:
 ``` 
 cd /opt
 git clone https://github.com/maurosoria/dirsearch.git
