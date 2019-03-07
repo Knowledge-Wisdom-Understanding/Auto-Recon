@@ -60,7 +60,7 @@ dirsearch() {
 }
 
 dirb() {
-    gnome-terminal --geometry 123x25-0-0 -- bash -c "dirb http://$IP; exec $SHELL"
+    gnome-terminal --geometry 123x25-0-0 -- bash -c "dirb http://$IP -o dirbOutput.txt; exec $SHELL"
 }
 
 banner
