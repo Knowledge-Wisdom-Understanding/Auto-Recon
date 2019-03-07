@@ -51,12 +51,16 @@ run_nmap() {
 
 # gobuster() {
 #     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-#     gnome-terminal --geometry 123x35-0-0 -- bash -c "gobuster -e -u http://$IP -w $wordlist -t 80 -o gobusterOutput.txt; exec $SHELL"
+#     gnome-terminal --geometry 123x35-0-0 -- bash -c "gobuster -e -u http://$IP -w $wordlist -o gobusterOutput.txt; exec $SHELL"
 # }
 
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-    gnome-terminal --geometry 92x20-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx; exec $SHELL"
+    gnome-terminal --geometry 92x20-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx,htm; exec $SHELL"
+}
+
+dirb() {
+    gnome-terminal --geometry 123x25-0-0 -- bash -c "dirb http://$IP; exec $SHELL"
 }
 
 banner
@@ -66,3 +70,4 @@ run_nmap
 # uniscan
 dirsearch
 # gobuster
+dirb
