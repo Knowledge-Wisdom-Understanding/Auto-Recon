@@ -41,13 +41,13 @@ create_nmap_dir(){
 
 # run full tcp port scan with default nmap scripts in new terminal window.
 run_nmap() {
-    gnome-terminal --geometry 118x50+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
+    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
 }
 
 # run uniscan in seperate window
-# uniscan() {
-#     gnome-terminal --geometry 92x20-0+0 -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
-# }
+uniscan() {
+    gnome-terminal --geometry 105x25+0-0 -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
+}
 
 # gobuster() {
 #     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
@@ -56,18 +56,18 @@ run_nmap() {
 
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-    gnome-terminal --geometry 92x20-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx,htm; exec $SHELL"
+    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx,htm; exec $SHELL"
 }
 
 dirb() {
-    gnome-terminal --geometry 123x25-0-0 -- bash -c "dirb http://$IP -o dirbOutput.txt; exec $SHELL"
+    gnome-terminal --geometry 105x25-0-0 -- bash -c "dirb http://$IP -o dirbOutput.txt; exec $SHELL"
 }
 
 banner
 get_target
 create_nmap_dir
 run_nmap
-# uniscan
+uniscan
 dirsearch
 # gobuster
 dirb
