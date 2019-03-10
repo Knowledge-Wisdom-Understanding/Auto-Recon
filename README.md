@@ -16,4 +16,5 @@ recon.sh requires dirsearch to be installed in the /opt folder.
 ``` 
 cd /opt
 git clone https://github.com/maurosoria/dirsearch.git
+git clone https://github.com/DanMcInerney/pentest-machine.git
 ```
