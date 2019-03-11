@@ -9,27 +9,14 @@
 cd /opt
 git clone https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon.git
 cd Auto-Recon
+chmod +x setup.sh
+./setup.sh
 chmod +x recon.sh
 ```
-recon.sh requires the following tools to be cloned and installed in the /opt folder.
-### To manually install Dependencies, run these commands in your /opt folder:
-``` 
-cd /opt
-git clone https://github.com/maurosoria/dirsearch.git
+
+### Usage:
+```
+./recon.sh
 ```
 
-```
-cd /opt
-git clone https://github.com/DanMcInerney/pentest-machine.git && cd pentest-machine
-./setup.sh
-```
-```
-cd /opt
-git clone https://github.com/DanMcInerney/net-creds.git
-pip install -r requirements.txt
-```
 
-Or just run the setup.sh install script in the auto-recon folder
-```
-./setup.sh
-```
