@@ -102,11 +102,12 @@ dirb() {
 banner
 get_target
 create_nmap_dir
-run_nmap
+
 # uniscan
 nikto
 dirsearch
 # gobuster
 dirb
+run_nmap
 
 
