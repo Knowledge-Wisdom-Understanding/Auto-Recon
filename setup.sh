@@ -20,11 +20,5 @@ git clone https://github.com/DanMcInerney/pentest-machine.git
 cd pentest-machine
 ./setup.sh
 
-echo '[+] Downloading & Installing net-creds repository in /opt folder'
-cd /opt
-git clone https://github.com/DanMcInerney/net-creds.git
-cd net-creds
-pip install -r requirements.txt
-
 echo '[+] Congratulations, All tools installed successfully!'
 echo '[+] Done. When you are done running this tool, cd into pentest-machine and deactivate the virtualenv by running the command: deactivate'
