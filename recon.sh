@@ -150,11 +150,11 @@ netcreds() {
     then
         sleep 20
         cd $cwd
-        python /opt/net-creds/net-creds.py -p $cwd/dump.pcap && sleep 7
+        python /opt/net-creds/net-creds.py -p $cwd/dump.pcap
     else
         sleep 20
         cd $cwd
-        gnome-terminal --working-directory=$cwd/ --geometry 105x25+500+200 -- bash -c "python /opt/net-creds/net-creds.py -p $cwd/dump.pcap && sleep 7; exec $SHELL"
+        gnome-terminal --working-directory=$cwd/ --geometry 105x25+500+200 -- bash -c "python /opt/net-creds/net-creds.py -p $cwd/dump.pcap; exec $SHELL"
     fi
 }
 
