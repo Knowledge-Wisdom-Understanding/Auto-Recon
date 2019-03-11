@@ -44,7 +44,7 @@ run_nmap() {
     
     gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
     printf "\e[93m########################################################## \e[0m\n"
-    sleep 3
+    sleep 2
     
     getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
     procid=`echo $getpid`
@@ -102,10 +102,11 @@ dirb() {
 banner
 get_target
 create_nmap_dir
+run_nmap
 # uniscan
 nikto
 dirsearch
 # gobuster
 dirb
-run_nmap
+
 
