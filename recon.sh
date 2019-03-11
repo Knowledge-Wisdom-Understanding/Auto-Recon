@@ -65,7 +65,7 @@ run_nmap() {
     fi
     cwd=$(pwd)
     cd /opt/pentest-machine && source pm/bin/activate && ./pentest-machine.py -x $cwd/nmap/initial.xml
-    cd /opt/pentest-machine && echo $IP > $cwd/hostlist.txt && ./pentest-machine.py -l $cwd/hostlist.txt
+    # cd /opt/pentest-machine && echo $IP > $cwd/hostlist.txt && ./pentest-machine.py -l $cwd/hostlist.txt
     cd $cwd
     printf "\e[93m[+] Waiting for All SCANS To Finish up \e[0m\n"
     printf "\e[93m########################################################## \e[0m\n"
