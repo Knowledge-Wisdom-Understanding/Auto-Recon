@@ -10,7 +10,7 @@ banner() {
     printf "\e[1;92m   _/   /_\   \ |  |  \   __\/  _ \   |       _// __ \_/ ___\/  _ \|       | \e[0m\n"
     printf "\e[1;92m  |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
     printf "\e[1;92m  |____/   \____|____/ |__|  \____/   |____|_  /\___  |\___  )____/|___|  /  \e[0m\n"
-    printf "\e[1;92m                                             \/     \/     \/           \/  \e[0mv2.4\n"
+    printf "\e[1;92m                                             \/     \/     \/           \/  \e[0mv2.5\n"
     printf "\e[1;77m\e[45m        AUTO RECON by @Knowledge-Wisdom-Understanding                  \e[0m\n"
     printf "\n"
     
