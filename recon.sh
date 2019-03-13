@@ -43,7 +43,7 @@ create_nmap_dir(){
 run_nmap() {
     
     gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
-    printf "\e[93m########################################################## \e[0m\n"
+    printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ################################ \e[0m\n"
     sleep 2
     
     getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
@@ -51,10 +51,10 @@ run_nmap() {
     nmapid=`expr "$procid" : '.* \(.*\)'`
     if [ $? -eq 0 ]
     then
-        printf "\e[93m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
+        printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
         for i in $(seq 1 50 )
         do
-            printf "\e[36m#*\e[0m"
+            printf "\e[93m#*\e[0m"
         done
         printf "\n"
         # echo "waiting for PID $procid to finish running NMAP script"
@@ -67,14 +67,36 @@ run_nmap() {
     cd /opt/pentest-machine && source pm/bin/activate && ./pentest-machine.py -x $cwd/nmap/initial.xml
     # cd /opt/pentest-machine && echo $IP > $cwd/hostlist.txt && ./pentest-machine.py -l $cwd/hostlist.txt
     cd $cwd
+    gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sSUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp $IP; exec $SHELL"
+    printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ################################ \e[0m\n"
+    sleep 2
+    
+    getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
+    procid=`echo $getpid`
+    nmapid=`expr "$procid" : '.* \(.*\)'`
+    if [ $? -eq 0 ]
+    then
+        printf "\e[36m[+] Waiting for UDP NMAP PID $nmapid Scan To Finish up \e[0m\n"
+        for i in $(seq 1 50 )
+        do
+            printf "\e[93m#*\e[0m"
+        done
+        printf "\n"
+        # echo "waiting for PID $procid to finish running NMAP script"
+        while ps -p $nmapid > /dev/null; do sleep 1; done;
+    else
+        echo "failed to find process with PID $nmapid" >&2
+        exit 1
+    fi
+    cd /opt/pentest-machine && source pm/bin/activate && ./pentest-machine.py -x $cwd/nmap/udp.xml
     printf "\e[93m[+] Waiting for All SCANS To Finish up \e[0m\n"
-    printf "\e[93m########################################################## \e[0m\n"
+    printf "\e[36m########################################################## \e[0m\n"
     printf "\e[93m[+] FINISHED SCANS \e[0m\n"
-    printf "Review Enumeration Info and Have Fun! PEACE OUT! \n"
-    echo "[+] Until Next Time..."
+    printf "\e[93m[+] Review Enumeration Info \e[0m\n"
+    echo "[+] See you Space Cowboy..."
 }
 
-# run uniscan in seperate window
+# run uniscan in new terminal-bottom left
 # uniscan() {
 #     gnome-terminal --geometry 105x25+0-0 -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
 # }
@@ -84,30 +106,32 @@ run_nmap() {
 #     gnome-terminal --geometry 123x35-0-0 -- bash -c "gobuster -e -u http://$IP -w $wordlist -o gobusterOutput.txt; exec $SHELL"
 # }
 
+# Running Nikto2 in new terminal-bottom left
 nikto() {
     gnome-terminal --geometry 105x25+0-0 -- bash -c "nikto -h $IP -Format txt -o niktoutput.txt; exec $SHELL"
 }
 
+# Running Dirsearch in new terminal-top right
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
     gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx,htm; exec $SHELL"
 }
 
-dirb() {
-    gnome-terminal --geometry 105x25-0-0 -- bash -c "dirb http://$IP -o dirbOutput.txt; exec $SHELL"
-}
+# dirb() {
+#     gnome-terminal --geometry 105x25-0-0 -- bash -c "dirb http://$IP -o dirbOutput.txt; exec $SHELL"
+# }
 
 
 
 banner
 get_target
 create_nmap_dir
-
-# uniscan
 nikto
-dirsearch
+# dirb
+# uniscan
 # gobuster
-dirb
+dirsearch
 run_nmap
+
 
 
