@@ -10,7 +10,7 @@ banner() {
     printf "\e[1;92m   _/   /_\   \ |  |  \   __\/  _ \   |       _// __ \_/ ___\/  _ \|       | \e[0m\n"
     printf "\e[1;92m  |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
     printf "\e[1;92m  |____/   \____|____/ |__|  \____/   |____|_  /\___  |\___  )____/|___|  /  \e[0m\n"
-    printf "\e[1;92m                                             \/     \/     \/           \/  \e[0mv2.5\n"
+    printf "\e[1;92m                                             \/     \/     \/           \/  \e[0mv2.6\n"
     printf "\e[1;77m\e[45m        AUTO RECON by @Knowledge-Wisdom-Understanding                  \e[0m\n"
     printf "\n"
     
@@ -43,7 +43,7 @@ create_nmap_dir(){
 run_nmap() {
     
     gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
-    printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ################################ \e[0m\n"
+    printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
     
     getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
@@ -68,7 +68,7 @@ run_nmap() {
     # cd /opt/pentest-machine && echo $IP > $cwd/hostlist.txt && ./pentest-machine.py -l $cwd/hostlist.txt
     cd $cwd
     gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sSUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp $IP; exec $SHELL"
-    printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ################################ \e[0m\n"
+    printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
     sleep 2
     
     getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
@@ -89,10 +89,10 @@ run_nmap() {
         exit 1
     fi
     cd /opt/pentest-machine && source pm/bin/activate && ./pentest-machine.py -x $cwd/nmap/udp.xml
-    printf "\e[93m[+] Waiting for All SCANS To Finish up \e[0m\n"
-    printf "\e[36m########################################################## \e[0m\n"
+    printf "\e[93m#################################################################################################### \e[0m\n"
+    printf "\e[36m[+] Waiting for All SCANS To Finish up \e[0m\n"
+    printf "\e[93m#################################################################################################### \e[0m\n"
     printf "\e[93m[+] FINISHED SCANS \e[0m\n"
-    printf "\e[93m[+] Review Enumeration Info \e[0m\n"
     echo "[+] See you Space Cowboy..."
 }
 
