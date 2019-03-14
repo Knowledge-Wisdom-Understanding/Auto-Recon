@@ -10,7 +10,7 @@ banner() {
     printf "\e[1;92m   _/   /_\   \ |  |  \   __\/  _ \   |       _// __ \_/ ___\/  _ \|       | \e[0m\n"
     printf "\e[1;92m  |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
     printf "\e[1;92m  |____/   \____|____/ |__|  \____/   |____|_  /\___  |\___  )____/|___|  /  \e[0m\n"
-    printf "\e[1;92m                                             \/     \/     \/           \/  \e[0mv2.6\n"
+    printf "\e[1;92m                                             \/     \/     \/           \/  \e[0mv2.5\n"
     printf "\e[1;77m\e[45m        AUTO RECON by @Knowledge-Wisdom-Understanding                  \e[0m\n"
     printf "\n"
     
@@ -93,13 +93,12 @@ run_nmap() {
     printf "\e[36m[+] Waiting for All SCANS To Finish up \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
     printf "\e[93m[+] FINISHED SCANS \e[0m\n"
-    echo "[+] See you Space Cowboy..."
 }
 
 # run uniscan in new terminal-bottom left
-# uniscan() {
-#     gnome-terminal --geometry 105x25+0-0 -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
-# }
+uniscan() {
+    gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
+}
 
 # gobuster() {
 #     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
@@ -127,8 +126,8 @@ banner
 get_target
 create_nmap_dir
 nikto
+uniscan
 # dirb
-# uniscan
 # gobuster
 dirsearch
 run_nmap
