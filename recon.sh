@@ -2,19 +2,43 @@
 # A script to automate information gathering on KALI LINUX
 
 # banner
-banner() {
+banner1() {
     
-    printf "\e[1;92m   _________                      ____________                               \e[0m\n"
-    printf "\e[1;92m  /___      \           __       /__          \                      __     \e[0m\n"
-    printf "\e[1;92m     /   _   \   __ ___/  |_  ____  \______*   \ ____   ____  ____  /  |___ \e[0m\n"
-    printf "\e[1;92m   _/   /_\   \ |  |  \   __\/  _ \   |       _// __ \_/ ___\/  _ \|       | \e[0m\n"
-    printf "\e[1;92m  |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
-    printf "\e[1;92m  |____/   \____|____/ |__|  \____/   |____|_  /\___  |\___  )____/|___|  /  \e[0m\n"
-    printf "\e[1;92m                                             \/     \/     \/           \/  \e[0mv2.5\n"
-    printf "\e[1;77m\e[45m        AUTO RECON by @Knowledge-Wisdom-Understanding                  \e[0m\n"
+    printf "\e[1;92m   _____________                  ________________                               \e[0m\n"
+    printf "\e[1;92m  /___/___      \         ____   /___/__          \                    ____      \e[0m\n"
+    printf "\e[1;92m      /  /   _   \_____ _/_/  |______|__|_____ *   \__________________/ /  |___  \e[0m\n"
+    printf "\e[1;92m   __/__/   /_\   \ |  |  \   __\/  _ \|  |       _// __ \_/ ___\/  _ \|       | \e[0m\n"
+    printf "\e[1;92m  |   |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
+    printf "\e[1;92m  |___|____/\__\____|____/_|__|\_\____/|__|____|_  /\___  |\___  \____/|___|  /  \e[0m\n"
+    printf "\e[1;92m                                             \___\/  \__\/  \__\/        \__\/   \e[0mv2.7\n"
+    printf "\e[1;77m\e[45m                  AUTO RECON by @Knowledge-Wisdom-Understanding                         \e[0m\n"
     printf "\n"
     
 }
+
+banner2() {
+    
+    printf "\e[1;92m  █████╗ ██╗   ██╗████████╗ ██████╗     ██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗ \e[0m\n"
+    printf "\e[1;92m ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗    ██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║ \e[0m\n"
+    printf "\e[1;92m ███████║██║   ██║   ██║   ██║   ██║    ██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║ \e[0m\n"
+    printf "\e[1;92m ██╔══██║██║   ██║   ██║   ██║   ██║    ██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║ \e[0m\n"
+    printf "\e[1;92m ██║  ██║╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║ \e[0m\n"
+    printf "\e[1;92m ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝ \e[0mv2.7\n"
+    printf "\e[1;77m\e[45m                  AUTO RECON by @Knowledge-Wisdom-Understanding                         \e[0m\n"
+    printf "\n"
+    
+}
+
+
+
+# Use a pseudo-random banner on program execution
+shuffle_banners() {
+    
+    declare -a banners=( banner1 banner2 )
+    $(shuf -n1 -e "${banners[@]}")
+    
+}
+
 
 # get target
 get_target() {
@@ -42,7 +66,8 @@ create_nmap_dir(){
 # run full tcp port scan with default nmap scripts in new terminal window.
 run_nmap() {
     
-    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
+    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
+    # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
     printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
     
@@ -93,11 +118,14 @@ run_nmap() {
     printf "\e[36m[+] Waiting for All SCANS To Finish up \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
     printf "\e[93m[+] FINISHED SCANS \e[0m\n"
+    echo "[+] See you Space Cowboy..."
 }
+
+# TODO. if port 445 is open run this nmap script, nmap -PS445 -p445 --script=smb-os-discovery,smb-enum-shares,smb-ls --script-args=ls.maxdepth=10 192.168.1.9
 
 # run uniscan in new terminal-bottom left
 uniscan() {
-    gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
+    gnome-terminal -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
 }
 
 # gobuster() {
@@ -120,9 +148,23 @@ dirsearch() {
 #     gnome-terminal --geometry 105x25-0-0 -- bash -c "dirb http://$IP -o dirbOutput.txt; exec $SHELL"
 # }
 
+# TODO: ADD Enumeration Function That Parses NMAP OutPut . Bottom-Left-Window
+# Enumerate() {
+#     gnome-terminal --geometry 105x25+0-0 -- bash -c "nikto -h $IP -Format txt -o niktoutput.txt; exec $SHELL"
+# }
+
+traperr() {
+    echo "ERROR: ${BASH_SOURCE[1]} at about ${BASH_LINENO[0]}"
+}
+
+set -o errtrace
+trap traperr ERR
 
 
-banner
+
+
+#banner1
+shuffle_banners
 get_target
 create_nmap_dir
 nikto
