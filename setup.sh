@@ -21,4 +21,4 @@ cd pentest-machine
 ./setup.sh
 
 echo '[+] Congratulations, All tools installed successfully!'
-echo '[+] Done. When you are done running this tool, cd into pentest-machine and deactivate the virtualenv by running the command: deactivate'
+echo '[+] Done. When you are done running this tool, cd into pentest-machine and deactivate the virtualenv by running the command: source /opt/pentest-machine/pm/deactivate'
