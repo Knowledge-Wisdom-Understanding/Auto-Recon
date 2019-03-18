@@ -123,7 +123,11 @@ run_nmap() {
     printf "\e[93m#################################################################################################### \e[0m\n"
     cd /opt/ReconScan && python3 vulnscan.py -a $cwd/nmap/initial.xml
     printf "\e[93m#################################################################################################### \e[0m\n"
-    echo "[+] See you Space Cowboy..."
+    cd /opt/ReconScan && python3 vulnscan.py -a $cwd/nmap/udp.xml
+    printf "\e[93m#################################################################################################### \e[0m\n"
+    echo "[*] See you Space Cowboy..."
+    printf "\e[93m#################################################################################################### \e[0m\n"
+    printf "\n"
 }
 
 # TODO. if port 445 is open run this nmap script, nmap -PS445 -p445 --script=smb-os-discovery,smb-enum-shares,smb-ls --script-args=ls.maxdepth=10 192.168.1.9
@@ -155,7 +159,7 @@ dirsearch() {
 
 # TODO: ADD Enumeration Function That Parses NMAP OutPut . Bottom-Left-Window
 # Enumerate() {
-#     gnome-terminal --geometry 105x25+0-0 -- bash -c "nikto -h $IP -Format txt -o niktoutput.txt; exec $SHELL"
+#     gnome-terminal --geometry 105x25+0-0 -- bash -c "ENUMERATE TOOLS HERE; exec $SHELL"
 # }
 
 traperr() {

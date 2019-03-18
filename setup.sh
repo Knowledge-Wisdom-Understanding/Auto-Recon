@@ -19,6 +19,8 @@ cd /opt
 git clone https://github.com/DanMcInerney/pentest-machine.git
 cd pentest-machine
 ./setup.sh
+cd /opt
+git clone https://github.com/RoliSoft/ReconScan.git
 
 echo '[+] Congratulations, All tools installed successfully!'
 echo '[+] Done. When you are done running this tool, cd into pentest-machine and deactivate the virtualenv by running the command: source /opt/pentest-machine/pm/deactivate'
