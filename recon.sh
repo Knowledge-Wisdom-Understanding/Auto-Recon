@@ -17,7 +17,7 @@ banner1() {
 }
 
 banner2() {
-    printf "\e[1;92m                                                                                    \e[0m\n"
+    
     printf "\e[1;92m  █████╗ ██╗   ██╗████████╗ ██████╗     ██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗ \e[0m\n"
     printf "\e[1;92m ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗    ██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║ \e[0m\n"
     printf "\e[1;92m ███████║██║   ██║   ██║   ██║   ██║    ██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║ \e[0m\n"
@@ -66,8 +66,8 @@ create_nmap_dir(){
 # run full tcp port scan with default nmap scripts in new terminal window.
 run_nmap() {
     
-    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
-    # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
+    # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
+    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -p- -T4 -oA nmap/initial $IP; exec $SHELL"
     printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
     
@@ -117,7 +117,12 @@ run_nmap() {
     printf "\e[93m#################################################################################################### \e[0m\n"
     printf "\e[36m[+] Waiting for All SCANS To Finish up \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[93m[+] FINISHED SCANS \e[0m\n"
+    printf "\e[36m[+] FINISHED SCANS \e[0m\n"
+    printf "\e[93m#################################################################################################### \e[0m\n"
+    printf "\e[36m[+] Checking Vulnerabilities \e[0m\n"
+    printf "\e[93m#################################################################################################### \e[0m\n"
+    cd /opt/ReconScan && python3 vulnscan.py -a $cwd/nmap/initial.xml
+    printf "\e[93m#################################################################################################### \e[0m\n"
     echo "[+] See you Space Cowboy..."
 }
 
