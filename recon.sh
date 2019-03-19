@@ -71,9 +71,13 @@ run_nmap() {
     printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
     
-    getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
-    procid=`echo $getpid`
-    nmapid=`expr "$procid" : '.* \(.*\)'`
+    nmap_process_id() {
+        getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
+        procid=`echo $getpid`
+        nmapid=`expr "$procid" : '.* \(.*\)'`
+    }
+    
+    nmap_process_id
     if [ $? -eq 0 ]
     then
         printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
@@ -95,10 +99,7 @@ run_nmap() {
     gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sSUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp $IP; exec $SHELL"
     printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
     sleep 2
-    
-    getpid=`ps -elf | grep nmap | grep -v grep | awk '{print $4}'`
-    procid=`echo $getpid`
-    nmapid=`expr "$procid" : '.* \(.*\)'`
+    nmap_process_id
     if [ $? -eq 0 ]
     then
         printf "\e[36m[+] Waiting for UDP NMAP PID $nmapid Scan To Finish up \e[0m\n"
@@ -125,9 +126,18 @@ run_nmap() {
     printf "\e[93m#################################################################################################### \e[0m\n"
     cd /opt/ReconScan && python3 vulnscan.py -a $cwd/nmap/udp.xml
     printf "\e[93m#################################################################################################### \e[0m\n"
-    echo "[*] See you Space Cowboy..."
+    cd $cwd
+    cp /opt/pentest-machine/output-by-host/$IP.txt . && mv $IP.txt pentest_machine_output.txt
+    if [ -f /usr/share/uniscan/report/$IP.html ]; then
+        cd $cwd
+        cp /usr/share/uniscan/report/$IP.html . && mv $IP.html uniscan_report.html
+    else
+        printf "\e[93mUniscan results will be saved in the /usr/share/uniscan/report folder \e[0m\n"
+    fi
+    
     printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\n"
+    printf "\e[36m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
+    printf "\e[93m#################################################################################################### \e[0m\n"
 }
 
 # TODO. if port 445 is open run this nmap script, nmap -PS445 -p445 --script=smb-os-discovery,smb-enum-shares,smb-ls --script-args=ls.maxdepth=10 192.168.1.9
@@ -139,7 +149,7 @@ uniscan() {
 
 # gobuster() {
 #     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-#     gnome-terminal --geometry 123x35-0-0 -- bash -c "gobuster -e -u http://$IP -w $wordlist -o gobusterOutput.txt; exec $SHELL"
+#     gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u http://$IP -w $wordlist -o gobusterOutput.txt; exec $SHELL"
 # }
 
 # Running Nikto2 in new terminal-bottom left
@@ -151,6 +161,7 @@ nikto() {
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
     gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx,htm; exec $SHELL"
+    
 }
 
 # dirb() {
@@ -159,7 +170,7 @@ dirsearch() {
 
 # TODO: ADD Enumeration Function That Parses NMAP OutPut . Bottom-Left-Window
 # Enumerate() {
-#     gnome-terminal --geometry 105x25+0-0 -- bash -c "ENUMERATE TOOLS HERE; exec $SHELL"
+#     gnome-terminal --geometry 105x25+0-0 -- bash -c "Enumeration Commands Here; exec $SHELL"
 # }
 
 traperr() {
@@ -168,7 +179,6 @@ traperr() {
 
 set -o errtrace
 trap traperr ERR
-
 
 
 
@@ -182,6 +192,3 @@ uniscan
 # gobuster
 dirsearch
 run_nmap
-
-
-
