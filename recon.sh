@@ -124,8 +124,6 @@ run_nmap() {
     printf "\e[93m#################################################################################################### \e[0m\n"
     cd /opt/ReconScan && python3 vulnscan.py -a $cwd/nmap/initial.xml
     printf "\e[93m#################################################################################################### \e[0m\n"
-    cd /opt/ReconScan && python3 vulnscan.py -a $cwd/nmap/udp.xml
-    printf "\e[93m#################################################################################################### \e[0m\n"
     cd $cwd
     cp /opt/pentest-machine/output-by-host/$IP.txt . && mv $IP.txt pentest_machine_output.txt
     if [ -f /usr/share/uniscan/report/$IP.html ]; then
@@ -135,7 +133,6 @@ run_nmap() {
         printf "\e[93mUniscan results will be saved in the /usr/share/uniscan/report folder \e[0m\n"
     fi
     
-    printf "\e[93m#################################################################################################### \e[0m\n"
     printf "\e[36m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
 }
