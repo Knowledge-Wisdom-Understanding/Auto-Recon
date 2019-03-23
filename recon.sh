@@ -67,7 +67,7 @@ create_nmap_dir(){
 run_nmap() {
     
     # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
-    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -sV -vv -Pn -p- -T 3 -oA nmap/initial $IP; exec $SHELL"
+    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -sV -vv -p- -T4 -oA nmap/initial $IP; exec $SHELL"
     printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
     
@@ -152,7 +152,7 @@ nikto() {
 # Running Dirsearch in new terminal-top right
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,html,bak,txt,jpg,json -r -f -x 403 --plain-text-report dirsearch.log; exec $SHELL"
+    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx -x 403 --plain-text-report dirsearch.log; exec $SHELL"
     
 }
 
