@@ -67,7 +67,7 @@ create_nmap_dir(){
 run_nmap() {
     
     # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
-    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -v -sV -A -p- -oA nmap/initial $IP; exec $SHELL"
+    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -sV -vv -Pn -p- -T 3 -oA nmap/initial $IP; exec $SHELL"
     printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
     
@@ -126,12 +126,7 @@ run_nmap() {
     printf "\e[93m#################################################################################################### \e[0m\n"
     cd $cwd
     cp /opt/pentest-machine/output-by-host/$IP.txt . && mv $IP.txt pentest_machine_output.txt
-    if [ -f /usr/share/uniscan/report/$IP.html ]; then
-        cd $cwd
-        cp /usr/share/uniscan/report/$IP.html . && mv $IP.html uniscan_report.html
-    else
-        printf "\e[93mUniscan results will be saved in the /usr/share/uniscan/report folder \e[0m\n"
-    fi
+    
     
     printf "\e[36m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
@@ -141,7 +136,7 @@ run_nmap() {
 
 # run uniscan in new terminal-bottom left
 uniscan() {
-    gnome-terminal -- bash -c "uniscan -u http://$IP -qweds; exec $SHELL"
+    gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$IP -qweds | tee uniscan.log; exec $SHELL"
 }
 
 # gobuster() {
@@ -151,15 +146,16 @@ uniscan() {
 
 # Running Nikto2 in new terminal-bottom left
 nikto() {
-    gnome-terminal --geometry 105x25+0-0 -- bash -c "nikto -h $IP -Format txt -o niktoutput.txt; exec $SHELL"
+    gnome-terminal --geometry 105x25+0-0 -- bash -c "nikto -h $IP -Format txt -C all -o niktoutput.txt; exec $SHELL"
 }
 
 # Running Dirsearch in new terminal-top right
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx,htm; exec $SHELL"
+    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,html,bak,txt,jpg,json -r -f -x 403 --plain-text-report dirsearch.log; exec $SHELL"
     
 }
+
 
 # dirb() {
 #     gnome-terminal --geometry 105x25-0-0 -- bash -c "dirb http://$IP -o dirbOutput.txt; exec $SHELL"
