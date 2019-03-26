@@ -66,8 +66,8 @@ create_nmap_dir(){
 # run full tcp port scan with default nmap scripts in new terminal window.
 run_nmap() {
     
-    # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
-    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -sV -vv -p- -T4 -oA nmap/initial $IP; exec $SHELL"
+    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
+    # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -sV -vv -p- -T4 -oA nmap/initial $IP; exec $SHELL"
     printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
     
@@ -122,10 +122,23 @@ run_nmap() {
     printf "\e[93m#################################################################################################### \e[0m\n"
     printf "\e[36m[+] Checking Vulnerabilities \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
-    cd /opt/ReconScan && python3 vulnscan.py -a $cwd/nmap/initial.xml
+    cd /opt/ReconScan && python3 vulnscan.py $cwd/nmap/initial.xml
     printf "\e[93m#################################################################################################### \e[0m\n"
     cd $cwd
     cp /opt/pentest-machine/output-by-host/$IP.txt . && mv $IP.txt pentest_machine_output.txt
+    create_recon_report_dir(){
+        if [ -d recon_report ]; then
+            find $cwd/ -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
+        else
+            mkdir -p recon_report
+            find $cwd/ -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
+        fi
+    }
+    create_recon_report_dir
     
     
     printf "\e[36m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
@@ -152,7 +165,7 @@ nikto() {
 # Running Dirsearch in new terminal-top right
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 80 -e php,asp,aspx -x 403 --plain-text-report dirsearch.log; exec $SHELL"
+    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch.log; exec $SHELL"
     
 }
 
