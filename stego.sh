@@ -5,23 +5,24 @@
 cwd=$(pwd)
 
 create_imgs_dir(){
-    if [ -d imgs ]; then
-        echo "imgs directory exists"
-        echo "moving images to imgs folder"
+    
+    find_imgs(){
         find $cwd/ -name '*.jpg' -exec mv {} $cwd/imgs/ \;
         find $cwd/ -name '*.jpeg' -exec mv {} $cwd/imgs/ \;
         find $cwd/ -name '*.img' -exec mv {} $cwd/imgs/ \;
         find $cwd/ -name '*.gif' -exec mv {} $cwd/imgs/ \;
         find $cwd/ -name '*.png' -exec mv {} $cwd/imgs/ \;
+    }
+    
+    if [ -d imgs ]; then
+        echo "imgs directory exists"
+        echo "moving images to imgs folder"
+        find_imgs
     else
         echo "creating imgs directory"
         mkdir -p imgs
         echo "moving images to imgs folder"
-        find $cwd/ -name '*.jpg' -exec mv {} $cwd/imgs/ \;
-        find $cwd/ -name '*.jpeg' -exec mv {} $cwd/imgs/ \;
-        find $cwd/ -name '*.img' -exec mv {} $cwd/imgs/ \;
-        find $cwd/ -name '*.gif' -exec mv {} $cwd/imgs/ \;
-        find $cwd/ -name '*.png' -exec mv {} $cwd/imgs/ \;
+        find_imgs
     fi
 }
 
