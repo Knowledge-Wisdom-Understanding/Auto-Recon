@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 
-# TODO, Make Banner
+
+# banner
+banner() {
+    
+    printf "\e[1;92m  _______ _______ _______ _______ _______ _______ _______ _______ _______     \e[0m\n"
+    printf "\e[1;92m |     __|_     _|    ___|     __|       |   |   |   _   |_     _|    ___|    \e[0m\n"
+    printf "\e[1;92m |__     | |   | |    ___|    |  |   *   |       |       | |   | |    ___|    \e[0m\n"
+    printf "\e[1;92m |_______| |___| |_______|_______|_______|__|_|__|___|___| |___| |_______|    \e[0m\n"
+    printf "\e[1;92m                                                                              \e[0m\n"
+    printf "\e[1;77m\e[45m                  AUTO RECON by @Knowledge-Wisdom-Understanding         \e[0m\n"
+    printf "\n"
+    
+}
 
 cwd=$(pwd)
 
@@ -92,6 +104,6 @@ traperr() {
 set -o errtrace
 trap traperr ERR
 
-
+banner
 create_imgs_dir
 run_steg_tools
