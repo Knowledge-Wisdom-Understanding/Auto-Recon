@@ -9,7 +9,7 @@ banner() {
     printf "\e[1;93m |__     | |   | |    ___|    |  |   *   |       |       | |   | |    ___|    \e[0m\n"
     printf "\e[1;93m |_______| |___| |_______|_______|_______|__|_|__|___|___| |___| |_______|    \e[0m\n"
     printf "\e[1;93m                                                                              \e[0m\n"
-    printf "\e[1;77m\e[45m                  STEGOMATE by @Knowledge-Wisdom-Understanding         \e[0m\n"
+    printf "\e[1;77m\e[45m                  STEGOMATE by @Knowledge-Wisdom-Understanding                 \e[0m\n"
     printf "\n"
     
 }
