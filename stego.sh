@@ -72,7 +72,7 @@ run_steg_tools() {
             steghide extract -sf $i -p password
             printf "\e[93m#################################################################################################### \e[0m\n"
         done
-    }
+    } > steghiderout.log
     
     
     exif_tool
@@ -83,6 +83,7 @@ run_steg_tools() {
     cat exifout.log >> steg_report.log
     cat bwalkout.log >> steg_report.log
     cat stringsout.log >> steg_report.log
+    cat steghiderout.log >> steg_report.log
     
     create_steg_report_dir(){
         if [ -d steg_report ]; then
