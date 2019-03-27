@@ -11,7 +11,7 @@ banner1() {
     printf "\e[1;92m  |   |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
     printf "\e[1;92m  |___|____/\__\____|____/_|__|\_\____/|__|____|_  /\___  |\___  \____/|___|  /  \e[0m\n"
     printf "\e[1;92m                                             \___\/  \__\/  \__\/        \__\/   \e[0mv2.7\n"
-    printf "\e[1;77m\e[45m                  AUTO RECON by @Knowledge-Wisdom-Understanding                         \e[0m\n"
+    printf "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                        \e[0m\n"
     printf "\n"
     
 }
@@ -24,7 +24,7 @@ banner2() {
     printf "\e[1;92m ██╔══██║██║   ██║   ██║   ██║   ██║    ██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║ \e[0m\n"
     printf "\e[1;92m ██║  ██║╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║ \e[0m\n"
     printf "\e[1;92m ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝ \e[0mv2.7\n"
-    printf "\e[1;77m\e[45m                  AUTO RECON by @Knowledge-Wisdom-Understanding                         \e[0m\n"
+    printf "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                           \e[0m\n"
     printf "\n"
     
 }
@@ -46,9 +46,9 @@ get_target() {
     read IP
     
     if [[ $IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        echo -e "\e[92m[+] SUCCESS"
+        echo -e "\e[92m[+]\e[0m SUCCESS"
     else
-        echo -e "\e[31m[+] NOT A VALID IP ADDRESS"
+        echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
     fi
 }
 
@@ -116,11 +116,11 @@ run_nmap() {
     fi
     cd /opt/pentest-machine && source pm/bin/activate && ./pentest-machine.py -x $cwd/nmap/udp.xml
     printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[36m[+] Waiting for All SCANS To Finish up \e[0m\n"
+    printf "\e[96m[+] Waiting for All SCANS To Finish up \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[36m[+] FINISHED SCANS \e[0m\n"
+    printf "\e[96m[+] FINISHED SCANS \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[36m[+] Checking Vulnerabilities \e[0m\n"
+    printf "\e[96m[+] Checking Vulnerabilities \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
     cd /opt/ReconScan && python3 vulnscan.py $cwd/nmap/initial.xml
     printf "\e[93m#################################################################################################### \e[0m\n"
@@ -128,20 +128,20 @@ run_nmap() {
     cp /opt/pentest-machine/output-by-host/$IP.txt . && mv $IP.txt pentest_machine_output.txt
     create_recon_report_dir(){
         if [ -d recon_report ]; then
-            find $cwd/ -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -maxdepth 1 -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -maxdepth 1 -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -maxdepth 1 -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
         else
             mkdir -p recon_report
-            find $cwd/ -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -maxdepth 1 -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -maxdepth 1 -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
+            find $cwd/ -maxdepth 1 -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
         fi
     }
     create_recon_report_dir
     
     
-    printf "\e[36m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
+    printf "\e[96m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
     printf "\e[93m#################################################################################################### \e[0m\n"
 }
 
