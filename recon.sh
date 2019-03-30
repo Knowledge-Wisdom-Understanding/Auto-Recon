@@ -126,19 +126,19 @@ run_nmap() {
     printf "\e[93m#################################################################################################### \e[0m\n"
     cd $cwd
     cp /opt/pentest-machine/output-by-host/$IP.txt . && mv $IP.txt pentest_machine_output.txt
-    create_recon_report_dir(){
-        if [ -d recon_report ]; then
-            find $cwd/ -maxdepth 1 -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -maxdepth 1 -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -maxdepth 1 -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
-        else
-            mkdir -p recon_report
-            find $cwd/ -maxdepth 1 -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -maxdepth 1 -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
-            find $cwd/ -maxdepth 1 -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
-        fi
-    }
-    create_recon_report_dir
+    # create_recon_report_dir(){
+    #     if [ -d recon_report ]; then
+    #         find $cwd/ -maxdepth 1 -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
+    #         find $cwd/ -maxdepth 1 -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
+    #         find $cwd/ -maxdepth 1 -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
+    #     else
+    #         mkdir -p recon_report
+    #         find $cwd/ -maxdepth 1 -name 'dirsearch.log' -exec mv {} $cwd/recon_report/ \;
+    #         find $cwd/ -maxdepth 1 -name 'uniscan.log' -exec mv {} $cwd/recon_report/ \;
+    #         find $cwd/ -maxdepth 1 -name 'niktoutput.txt' -exec mv {} $cwd/recon_report/ \;
+    #     fi
+    # }
+    # create_recon_report_dir
     
     
     printf "\e[96m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
