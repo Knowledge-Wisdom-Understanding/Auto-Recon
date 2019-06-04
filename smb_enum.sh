@@ -2,7 +2,7 @@
 
 if [ -z $1 ]; then echo "Usage: ./all_smb.sh RHOST" && exit; else rhost=$1; fi
 echo -e "\e[92m[+]\e[0m Running SMBCLIENT, Checking shares" | tee -a smb-scan-$rhost.txt
-smbclient -L //$rhost -U "anonymous"%"anonymous" | tee -a smb-scan-$rhost.txt
+smbclient -L //$rhost -U "guest"% | tee -a smb-scan-$rhost.txt
 
 echo -e "\e[92m[+]\e[0m Running ENUM4LINUX" | tee -a smb-scan-$rhost.txt
 enum4linux -av $rhost | tee -a smb-scan-$rhost.txt
