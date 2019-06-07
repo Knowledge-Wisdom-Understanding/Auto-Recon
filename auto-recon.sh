@@ -710,7 +710,7 @@ Enum_SNMP() {
     cd $cwd
     grep -i "/udp" nmap/udp-$rhost.nmap | cut -d "/" -f 1 | tail -n 1 >udp-scan-$rhost.txt
     grep -i "/udp" nmap/udp-$rhost.nmap | cut -d "/" -f 1 | tail -n 1 >>udp-scan-$rhost.txt
-    if [ $(grep -q "161" udp-scan-$rhost.txt) ] || [ $(grep -q "162" udp-scan-$rhost.txt) ]; then
+    if [ $(grep -i"161" udp-scan-$rhost.txt) ] || [ $(grep -i "162" udp-scan-$rhost.txt) ]; then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
         onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-scan.log
         echo "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-scan.log "
