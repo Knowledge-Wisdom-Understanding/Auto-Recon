@@ -615,7 +615,7 @@ Enum_Web() {
 }
 
 Intense_Nmap_Scan() {
-    gnome-terminal --geometry 135x55-0-0 -- bash -c "nmap -vv -Pn -A -O -script-args=unsafe=1 -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/intense-scan-$rhost $rhost; exec $SHELL" &>/dev/null
+    gnome-terminal --geometry 135x55+0+0 -- bash -c "nmap -vv -Pn -A -O -script-args=unsafe=1 -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/intense-scan-$rhost $rhost; exec $SHELL" &>/dev/null
     printf "\e[93m################### RUNNING NMAP INTENSE SCAN TOP OPEN PORTS ##################################################### \e[0m\n"
     sleep 2
 
