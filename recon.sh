@@ -66,7 +66,7 @@ create_nmap_dir(){
 # run full tcp port scan with default nmap scripts in new terminal window.
 run_nmap() {
     
-    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL"
+    gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -vv -Pn --disable-arp-ping -sS -A -sC -p- -T 3 -script-args=unsafe=1 -n -oA nmap/initial $IP; exec $SHELL" &>/dev/null
     # gnome-terminal --geometry 105x26+0+0 -- bash -c "nmap -sC -sV -vv -p- -T4 -oA nmap/initial $IP; exec $SHELL"
     printf "\e[93m################### RUNNING NMAP ALL TCP PORTS ##################################################### \e[0m\n"
     sleep 2
@@ -96,7 +96,7 @@ run_nmap() {
     cd /opt/pentest-machine && source pm/bin/activate && ./pentest-machine.py -x $cwd/nmap/initial.xml
     # cd /opt/pentest-machine && echo $IP > $cwd/hostlist.txt && ./pentest-machine.py -l $cwd/hostlist.txt
     cd $cwd
-    gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sSUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp $IP; exec $SHELL"
+    gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sSUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp $IP; exec $SHELL" &>/dev/null
     printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
     sleep 2
     nmap_process_id
@@ -149,23 +149,23 @@ run_nmap() {
 
 # run uniscan in new terminal-bottom left
 uniscan() {
-    gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$IP -qweds | tee uniscan.log; exec $SHELL"
+    gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$IP -qweds | tee uniscan.log; exec $SHELL" &>/dev/null
 }
 
 # gobuster() {
 #     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-#     gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u http://$IP -w $wordlist -o gobusterOutput.txt; exec $SHELL"
+#     gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u http://$IP -w $wordlist -o gobusterOutput.txt; exec $SHELL" &>/dev/null
 # }
 
 # Running Nikto2 in new terminal-bottom left
 nikto() {
-    gnome-terminal --geometry 105x25+0-0 -- bash -c "nikto -h $IP -Format txt -C all -o niktoutput.txt; exec $SHELL"
+    gnome-terminal --geometry 105x25+0-0 -- bash -c "nikto -h $IP -Format txt -C all -o niktoutput.txt; exec $SHELL" &>/dev/null
 }
 
 # Running Dirsearch in new terminal-top right
 dirsearch() {
     wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch.log; exec $SHELL"
+    gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$IP -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch.log; exec $SHELL" &>/dev/null
     
 }
 
