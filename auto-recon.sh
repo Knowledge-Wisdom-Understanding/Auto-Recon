@@ -106,7 +106,7 @@ Open_Ports_Scan() {
 Enum_Web() {
     grep -w "http" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-$rhost.txt
     portfilename=openports-$rhost.txt
-    echo $portfilename
+    # echo $portfilename
     httpPortsLines=$(cat $portfilename)
     for port in $httpPortsLines; do
         wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
@@ -160,7 +160,7 @@ Enum_Web() {
 Enum_Web_SSL() {
     grep -w "https" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openportsSSL-$rhost.txt
     portfilenameSSL=openportsSSL-$rhost.txt
-    echo $portfilenameSSL
+    # echo $portfilenameSSL
     httpPortsLinesSSL=$(cat $portfilenameSSL)
     for port in $httpPortsLinesSSL; do
         wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt"
