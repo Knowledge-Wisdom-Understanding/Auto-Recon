@@ -64,25 +64,28 @@ exitFunction() {
     exit 1
 }
 
-# getUpHosts() {
-#     # Live Hosts
-#     baseip=$(echo $rhost | cut -d "." -f1-3)
-#     cidr_range=$(echo $baseip".0")
-#     nmap -sn $cidr_range/24 -oG /tmp/live-hosts.txt >/dev/null
-#     cat /tmp/live-hosts.txt | grep "Up" | cut -d " " -f2 >live-hosts-ip.txt
-#     rm /tmp/live-hosts.txt
-#     Live_Host=live-hosts-ip.txt
-#     echo -e "${DOPE} Live Hosts Recon On $cidr_range Done!"
-# }
+getUpHosts() {
+    # Live Hosts
+    baseip=$(echo $rhost | cut -d "." -f1-3)
+    cidr_range=$(echo $baseip".0")
+    nmap -sn $cidr_range/24 -oG /tmp/live-hosts.txt >/dev/null
+    cat /tmp/live-hosts.txt | grep "Up" | cut -d " " -f2 >live-hosts-ip.txt
+    rm /tmp/live-hosts.txt
+    Live_Host=live-hosts-ip.txt
+    echo -e "${DOPE} Live Hosts Recon On $cidr_range/24 Done!"
+    cat live-hosts-ip.txt
+    # cat $uphostfile
+}
 
-# Full_TCP_Scan_All() {
-#     Live_Host=live-hosts-ip.txt
-#     if [ -n "$Live_Host" ]; then
-#         echo ""
-#         echo -e "${DOPE} Scanning all hosts"
-#         nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host
-#     fi
-# }
+Full_TCP_Scan_All() {
+    Live_Host=live-hosts-ip.txt
+    if [ -e live-hosts-ip.txt ]; then
+        echo ""
+        echo -e "${DOPE} Scanning all hosts"
+        echo -e "${DOPE} Running: nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host In new Terminal Window."
+        gnome-terminal --geometry 105x26-0+0 -- bash -c "nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host; exec $SHELL" &>/dev/null
+    fi
+}
 
 Open_Ports_Scan() {
     echo -e "${DOPE}Scanning $rhost"
@@ -284,6 +287,7 @@ Enum_SMB() {
     fi
 }
 
+getUpHosts
 Open_Ports_Scan
 Enum_Web
 Enum_Web_SSL
@@ -294,27 +298,28 @@ Enum_SNMP() {
     cwd=$(pwd)
     # echo $cwd
     cd $cwd
-    grep -w "161/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan-$rhost.txt
-    if (grep -i "161" udp-scan-$rhost.txt); then
-        printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
-        # nmap_process_id() {
-        #     getpid=$(ps -elf | grep nmap | grep -v grep | awk '{print $4}')
-        #     procid=$(echo $getpid)
-        #     nmapid=$(expr "$procid" : '.* \(.*\)')
-        # }
+    nmap_process_id() {
+        getpid=$(ps -elf | grep nmap | grep -v grep | awk '{print $4}')
+        procid=$(echo $getpid)
+        nmapid=$(expr "$procid" : '.* \(.*\)')
+    }
 
-        # nmap_process_id
-        # if [ $? -eq 0 ]; then
-        #     printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
-        #     for i in $(seq 1 50); do
-        #         printf "\e[93m#*\e[0m"
-        #     done
-        #     printf "\n"
-        #     # echo "waiting for PID $procid to finish running NMAP script"
-        #     while ps -p $nmapid >/dev/null; do sleep 1; done
-        # else
-        #     :
-        # fi
+    nmap_process_id
+    if [ $? -eq 0 ]; then
+        printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
+        for i in $(seq 1 50); do
+            printf "\e[93m#*\e[0m"
+        done
+        printf "\n"
+        # echo "waiting for PID $procid to finish running NMAP script"
+        while ps -p $nmapid >/dev/null; do sleep 1; done
+    else
+        :
+    fi
+    grep -i "161/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan-$rhost.txt
+    if (grep -q "161" udp-scan-$rhost.txt); then
+        printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
+
         echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
         onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
         echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
@@ -324,9 +329,28 @@ Enum_SNMP() {
         # echo "${DOPE} Running: snmpenum $rhost public /opt/snmpenum/windows.txt | tee -a snmpenum-scan.log"
         # snmpenum $rhost public /opt/snmpenum/windows.txt | tee -a snmpenum-scan.log
     fi
-    grep -w "162/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan2-$rhost.txt
+    nmap_process_id() {
+        getpid=$(ps -elf | grep nmap | grep -v grep | awk '{print $4}')
+        procid=$(echo $getpid)
+        nmapid=$(expr "$procid" : '.* \(.*\)')
+    }
+
+    nmap_process_id
+    if [ $? -eq 0 ]; then
+        printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
+        for i in $(seq 1 50); do
+            printf "\e[93m#*\e[0m"
+        done
+        printf "\n"
+        # echo "waiting for PID $procid to finish running NMAP script"
+        while ps -p $nmapid >/dev/null; do sleep 1; done
+    else
+        :
+    fi
+    grep -i "162/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan2-$rhost.txt
     if (grep -q "162" udp-scan2-$rhost.txt); then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
+
         echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-scan.log "
         onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
         echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
@@ -337,7 +361,6 @@ Enum_SNMP() {
         :
     fi
 }
-# Enum_SNMP
 
 FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     cwd=$(pwd)
@@ -366,6 +389,7 @@ Enum_Oracle() {
     fi
 }
 Enum_Oracle
+# Full_TCP_Scan_All
 
 Clean_Up() {
     cwd=$(pwd)
@@ -374,9 +398,16 @@ Clean_Up() {
     rm openports2.txt
     rm udp-scan-$rhost.txt
     rm udp-scan2-$rhost.txt
-    mkdir $rhost-report
-    find $cwd/ -maxdepth 1 -name "*$rhost*.*" -exec mv {} $cwd/$rhost-report/ \;
-    find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
+    if [ -d $rhost-report ]; then
+        find $cwd/ -maxdepth 1 -name "*$rhost*.*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
+        mv live-hosts-ip.txt $rhost-report
+    else
+        mkdir -p $rhost-report
+        find $cwd/ -maxdepth 1 -name "*$rhost*.*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
+        mv live-hosts-ip.txt $rhost-report
+    fi
 }
 Clean_Up
 
