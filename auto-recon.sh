@@ -100,7 +100,7 @@ Open_Ports_Scan() {
     create_nmap_dir
     # nmap -v -Pn -A -O -p- --max-retries 1 --max-rate 500 --max-scan-delay 20 -T4 -oN nmap/FullTCP $rhost
     #nmap -vv -sT -Pn -p- --disable-arp-ping -T4 -oA nmap/open-ports-$rhost $rhost
-    nmap -vv -sT -Pn --top-ports 100 --disable-arp-ping --max-retries 1 -oA nmap/open-ports-$rhost $rhost
+    nmap -vv -sT -Pn --top-ports 1000 --disable-arp-ping --max-retries 1 -oA nmap/open-ports-$rhost $rhost
 }
 
 Enum_Web() {
@@ -117,7 +117,7 @@ Enum_Web() {
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds | tee uniscan-$rhost-$port.log"
         curl http://$rhost:$port/robots.txt -o robots-$rhost-$port.txt
-        gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -host http://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 http://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$rhost:$port -qweds | tee uniscan-$rhost-$port.log; exec $SHELL" &>/dev/null
@@ -140,8 +140,8 @@ Enum_Web() {
             :
         fi
         if grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found WordPress! Running wpscan --url http://$rhost/ --enumerate p,t,u | tee -a wpscan-$rhost-80.log"
-            wpscan --url http://$rhost:$port/ --enumerate p,t,u | tee -a wpscan.log
+            echo -e "${DOPE} Found WordPress! Running wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php --enumerate p,t,u | tee -a wpscan-$rhost-$port.log"
+            gnome-terminal --geometry 123x35-0+0 -- bash -c "wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php --enumerate p,t,u | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://$rhost -t 32 | tee -a drupalscan-$rhost-80.log"
             droopescan scan drupal -u http://$rhost:$port/ -t 32 | tee -a drupalscan-$rhost-$port.log
@@ -165,18 +165,18 @@ Enum_Web_SSL() {
     for port in $httpPortsLinesSSL; do
         wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt"
         echo -e "${DOPE} Running The Following Commands"
-        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-80.log"
-        echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-$port-$rhost.txt"
-        echo -e "${DOPE} whatweb -a 3 http://$rhost:$port/ | tee whatweb-$rhost:$port.log"
-        echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
-        echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds | tee uniscan-$rhost-$port.log"
-        curl http://$rhost:$port/robots.txt -o robots-$rhost-$port.txt
-        gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u https://$rhost:443 -w $wordlist -s '200,204,301,302,307,403,500' -o gobuster-$rhost-443.txt -t 50 -k; exec $SHELL" &>/dev/null
+        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-80.log"
+        echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-$rhost.txt"
+        echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-$rhost:$port.log"
+        echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
+        echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds | tee uniscan-$rhost-$port.log"
+        curl https://$rhost:$port/robots.txt -o robots-$rhost-$port.txt
+        gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403,500' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u https://$rhost:$port -qweds | tee uniscan-$rhost-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25-0-0 -- bash -c "sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log; exec $SHELL" &>/dev/null
-        # fi
+
         whatweb_process_id() {
             getpid=$(ps -elf | grep whatweb | grep -v grep | awk '{print $4}')
             procid=$(echo $getpid)
@@ -195,8 +195,8 @@ Enum_Web_SSL() {
             :
         fi
         if grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found WordPress! Running wpscan --url https://$rhost/ --enumerate p,t,u | tee -a wpscan-$rhost-$port.log"
-            wpscan --url https://$rhost:$port/ --enumerate p,t,u | tee -a wpscan.log
+            echo -e "${DOPE} Found WordPress! Running wpscan --url https://$rhost:$port/ --enumerate p,t,u | tee -a wpscan-$rhost-$port.log"
+            wpscan --url https://$rhost:$port/ --wp-content-dir wp-login.php --enumerate p,t,u | tee -a wpscan.log
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee -a drupalscan-$rhost-$port.log"
             droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
@@ -236,20 +236,20 @@ Intense_Nmap_UDP_Scan() {
     #     :
     # fi
     gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp-$rhost $rhost; exec $SHELL" &>/dev/null
-    printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
-    sleep 2
-    nmap_process_id
-    if [ $? -eq 0 ]; then
-        printf "\e[36m[+] Waiting for UDP NMAP PID $nmapid Scan To Finish up \e[0m\n"
-        for i in $(seq 1 50); do
-            printf "\e[93m#*\e[0m"
-        done
-        printf "\n"
-        # echo "waiting for PID $procid to finish running NMAP script"
-        while ps -p $nmapid >/dev/null; do sleep 1; done
-    else
-        :
-    fi
+    # printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
+    # sleep 2
+    # nmap_process_id
+    # if [ $? -eq 0 ]; then
+    #     printf "\e[36m[+] Waiting for UDP NMAP PID $nmapid Scan To Finish up \e[0m\n"
+    #     for i in $(seq 1 50); do
+    #         printf "\e[93m#*\e[0m"
+    #     done
+    #     printf "\n"
+    #     # echo "waiting for PID $procid to finish running NMAP script"
+    #     while ps -p $nmapid >/dev/null; do sleep 1; done
+    # else
+    #     :
+    # fi
 
     # cwd=$(pwd)
     # echo $cwd
