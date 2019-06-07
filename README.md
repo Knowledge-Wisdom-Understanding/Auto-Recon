@@ -20,5 +20,6 @@ chmod +x recon.sh
 ./recon.sh
 ./auto-recon.sh RHOST
 ```
-### auto-recon.sh is the latest version and runs more efficiently. :)
+### auto-recon.sh is the latest version and runs more efficiently : )
+### version 2.7 will remain in the project for now, however it is no longer being maintained
 
