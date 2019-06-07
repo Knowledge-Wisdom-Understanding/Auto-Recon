@@ -11,12 +11,14 @@ git clone https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon.git
 cd Auto-Recon
 chmod +x setup.sh
 ./setup.sh
+chmod +x auto-recon.sh
 chmod +x recon.sh
 ```
 
 ### Usage:
 ```
 ./recon.sh
+./auto-recon.sh RHOST
 ```
-
+### auto-recon.sh is the latest version and runs more efficiently. :)
 
