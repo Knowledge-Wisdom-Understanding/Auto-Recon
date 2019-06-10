@@ -43,13 +43,12 @@ else
     smb_host_file=$1
     smb_hosts=$(cat $1)
 fi
-
 if [ -n "$smb_hosts" ]; then
     for host in $smb_hosts; do
         smb_vuln_scan
     done
-    cwd=$(pwd)
-    mkdir -p SMB-SCAN-REPORT
-    find $cwd/ -maxdepth 1 -name "*$host*.*" -exec mv {} $cwd/SMB-SCAN-REPORT/ \;
 fi
+cwd=$(pwd)
+mkdir -p SMB-SCAN-REPORT
+find $cwd/ -maxdepth 1 -name "smb-scan-*" -exec mv {} $cwd/SMB-SCAN-REPORT/ \;
 echo -e "${NICE} All SMB scans finished!"
