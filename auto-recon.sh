@@ -157,6 +157,12 @@ Enum_Web() {
     done
 }
 
+Web_Vulns() {
+    grep -w "http" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-$rhost.txt
+    echo -e "${DOPE} Running nmap http vuln-scan!"
+    nmap -Pn -sV --script=http-vuln*.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-vuln-scan $rhost
+}
+
 Enum_Web_SSL() {
     grep -w "https" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openportsSSL-$rhost.txt
     portfilenameSSL=openportsSSL-$rhost.txt
@@ -213,51 +219,8 @@ Enum_Web_SSL() {
 }
 
 Intense_Nmap_UDP_Scan() {
-    # gnome-terminal --geometry 135x55+0+0 -- bash -c "nmap -vv -Pn -A -O -script-args=unsafe=1 -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/intense-scan-$rhost $rhost; exec $SHELL" &>/dev/null
-    # printf "\e[93m################### RUNNING NMAP INTENSE SCAN TOP OPEN PORTS ##################################################### \e[0m\n"
-    # sleep 2
-
-    # nmap_process_id() {
-    #     getpid=$(ps -elf | grep nmap | grep -v grep | awk '{print $4}')
-    #     procid=$(echo $getpid)
-    #     nmapid=$(expr "$procid" : '.* \(.*\)')
-    # }
-
-    # nmap_process_id
-    # if [ $? -eq 0 ]; then
-    #     printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
-    #     for i in $(seq 1 50); do
-    #         printf "\e[93m#*\e[0m"
-    #     done
-    #     printf "\n"
-    #     # echo "waiting for PID $procid to finish running NMAP script"
-    #     while ps -p $nmapid >/dev/null; do sleep 1; done
-    # else
-    #     :
-    # fi
     gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp-$rhost $rhost; exec $SHELL" &>/dev/null
-    # printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
-    # sleep 2
-    # nmap_process_id
-    # if [ $? -eq 0 ]; then
-    #     printf "\e[36m[+] Waiting for UDP NMAP PID $nmapid Scan To Finish up \e[0m\n"
-    #     for i in $(seq 1 50); do
-    #         printf "\e[93m#*\e[0m"
-    #     done
-    #     printf "\n"
-    #     # echo "waiting for PID $procid to finish running NMAP script"
-    #     while ps -p $nmapid >/dev/null; do sleep 1; done
-    # else
-    #     :
-    # fi
-
-    # cwd=$(pwd)
-    # echo $cwd
-    printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[96m[+] Waiting for All SCANS To Finish up \e[0m\n"
-    printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[96m[+] FINISHED SCANS \e[0m\n"
-    printf "\e[93m#################################################################################################### \e[0m\n"
+    printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
 }
 
 Enum_SMB() {
@@ -289,6 +252,7 @@ Enum_SMB() {
 
 getUpHosts
 Open_Ports_Scan
+Web_Vulns
 Enum_Web
 Enum_Web_SSL
 Intense_Nmap_UDP_Scan
@@ -317,7 +281,10 @@ Enum_SNMP() {
         :
     fi
     grep -i "161/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan-$rhost.txt
-    if (grep -q "161" udp-scan-$rhost.txt); then
+    if (grep -i "161/udp   open|filtered" nmap/udp-$rhost.nmap); then
+        echo -e "${DOPE} SNMP port appears to be filtered"
+        return 0
+    elif (grep -q "161" udp-scan-$rhost.txt); then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
 
         echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
@@ -325,40 +292,6 @@ Enum_SNMP() {
         echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
         # echo -e "${DOPE} Running: snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-scan.log "
         snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
-        # snmp-check -c public -v 2 -d $rhost
-        # echo "${DOPE} Running: snmpenum $rhost public /opt/snmpenum/windows.txt | tee -a snmpenum-scan.log"
-        # snmpenum $rhost public /opt/snmpenum/windows.txt | tee -a snmpenum-scan.log
-    fi
-    nmap_process_id() {
-        getpid=$(ps -elf | grep nmap | grep -v grep | awk '{print $4}')
-        procid=$(echo $getpid)
-        nmapid=$(expr "$procid" : '.* \(.*\)')
-    }
-
-    nmap_process_id
-    if [ $? -eq 0 ]; then
-        printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
-        for i in $(seq 1 50); do
-            printf "\e[93m#*\e[0m"
-        done
-        printf "\n"
-        # echo "waiting for PID $procid to finish running NMAP script"
-        while ps -p $nmapid >/dev/null; do sleep 1; done
-    else
-        :
-    fi
-    grep -i "162/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan2-$rhost.txt
-    if (grep -q "162" udp-scan2-$rhost.txt); then
-        printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
-
-        echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-scan.log "
-        onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
-        echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
-        echo -e "${DOPE} Running: snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-$rhost.log "
-        # snmp-check -c public -v 1 -d $rhost
-        snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-$rhost.log
-    else
-        :
     fi
 }
 
