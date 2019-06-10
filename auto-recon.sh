@@ -116,7 +116,7 @@ Enum_Web() {
         echo -e "${DOPE} whatweb -a 3 http://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds | tee uniscan-$rhost-$port.log"
-        curl http://$rhost:$port/robots.txt -o robots-$rhost-$port.txt
+        curl http://$rhost:$port/robots.txt -o robots-$rhost-$port.txt &>/dev/null
         gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -host http://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 http://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
@@ -176,7 +176,7 @@ Enum_Web_SSL() {
         echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds | tee uniscan-$rhost-$port.log"
-        curl https://$rhost:$port/robots.txt -o robots-$rhost-$port.txt
+        curl https://$rhost:$port/robots.txt -o robots-$rhost-$port.txt &>/dev/null
         gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403,500' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
