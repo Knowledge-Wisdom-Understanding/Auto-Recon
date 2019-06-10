@@ -17,6 +17,10 @@ git clone https://github.com/maurosoria/dirsearch.git
 cd /opt
 git clone https://github.com/RoliSoft/ReconScan.git
 
+apt install odat
+cd /opt
+git clone https://github.com/quentinhardy/odat.git
+
 chmod +x auto-recon.sh
 chmod +x smb_enum_all.sh
 
