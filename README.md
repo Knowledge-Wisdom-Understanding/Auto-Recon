@@ -10,7 +10,6 @@ git clone https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon.git
 cd Auto-Recon
 chmod +x setup.sh
 ./setup.sh
-chmod +x auto-recon.sh
 ```
 
 ### Usage:
