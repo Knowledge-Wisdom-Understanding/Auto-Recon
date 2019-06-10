@@ -42,7 +42,7 @@ GREEN='\033[0;32m'
 DOPE='\e[92m[+]\e[0m'
 
 helpFunction() {
-    echo -e "${DOPE}Usage: $0 TARGET-IP"
+    echo -e "${DOPE} Usage: $0 TARGET-IP"
     echo
     echo "Example: "
     echo "./$0 10.11.1.123"
@@ -88,7 +88,7 @@ Full_TCP_Scan_All() {
 }
 
 Open_Ports_Scan() {
-    echo -e "${DOPE}Scanning $rhost"
+    echo -e "${DOPE} Scanning $rhost"
     create_nmap_dir() {
         if [ -d nmap ]; then
             echo "nmap directory exists"
