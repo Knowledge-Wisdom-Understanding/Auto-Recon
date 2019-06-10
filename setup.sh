@@ -17,5 +17,8 @@ git clone https://github.com/maurosoria/dirsearch.git
 cd /opt
 git clone https://github.com/RoliSoft/ReconScan.git
 
+chmod +x auto-recon.sh
+chmod +x smb_enum_all.sh
+
 echo '[+] Congratulations, All tools installed successfully!'
 echo '[+] Done. When you are done running this tool, cd into pentest-machine and deactivate the virtualenv by running the command: source /opt/pentest-machine/pm/deactivate'
