@@ -36,10 +36,8 @@ shuffle_banners() {
 }
 shuffle_banners
 
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-GREEN='\033[0;32m'
 DOPE='\e[92m[+]\e[0m'
+NOTDOPE='\e[31m[+]\e[0m'
 
 helpFunction() {
     echo -e "${DOPE} Usage: $0 TARGET-IP"
@@ -53,7 +51,7 @@ helpFunction() {
 if [ -z $1 ]; then helpFunction && exit; else rhost=$1; fi
 
 if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo -e "\e[92m[+]\e[0m SUCCESS"
+    :
 else
     echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
     exit 1
@@ -159,7 +157,7 @@ Enum_Web() {
 
 Web_Vulns() {
     grep -w "http" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-$rhost.txt
-    echo -e "${DOPE} Running nmap http vuln-scan!"
+    echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
     nmap -Pn -sV --script=http-vuln*.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-vuln-scan $rhost
 }
 
@@ -169,7 +167,7 @@ Enum_Web_SSL() {
     # echo $portfilenameSSL
     httpPortsLinesSSL=$(cat $portfilenameSSL)
     for port in $httpPortsLinesSSL; do
-        wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt"
+        wordlist="/usr/share/wordlists/dirb/big.txt"
         echo -e "${DOPE} Running The Following Commands"
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-80.log"
         echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-$rhost.txt"
@@ -218,6 +216,23 @@ Enum_Web_SSL() {
     done
 }
 
+ftp_scan() {
+    grep -w "ftp" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openportsFTP-$rhost.txt
+    portfilenameFTP=openportsFTP-$rhost.txt
+    # echo $portfilenameSSL
+    PortsLinesFTP=$(cat $portfilenameFTP)
+    if [ -n openportsFTP-$rhost.txt ]; then
+        for ftp_port in $PortsLinesFTP; do
+            echo -e "${DOPE} Running nmap ftp script scan on port: $ftp_port"
+            nmap -sV -Pn -p $ftp_port --script=ftp-anon,ftp-bounce,ftp-libopie,ftp-proftpd-backdoor,ftp-vsftpd-backdoor,ftp-vuln-cve2010-4221 -v -oA nmap/ftp-enum $rhost
+        done
+    fi
+}
+
+# java_rmi_scan() {
+#     grep -i "something" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports3.txt
+# }
+
 Intense_Nmap_UDP_Scan() {
     gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp-$rhost $rhost; exec $SHELL" &>/dev/null
     printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
@@ -253,6 +268,7 @@ Enum_SMB() {
 getUpHosts
 Open_Ports_Scan
 Web_Vulns
+ftp_scan
 Enum_Web
 Enum_Web_SSL
 Intense_Nmap_UDP_Scan
@@ -330,7 +346,7 @@ Clean_Up() {
     rm openports-$rhost.txt
     rm openports2.txt
     rm udp-scan-$rhost.txt
-    rm udp-scan2-$rhost.txt
+    rm openportsFTP-$rhost.txt
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
