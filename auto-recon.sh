@@ -109,7 +109,7 @@ Enum_Web() {
     for port in $httpPortsLines; do
         wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
         echo -e "${DOPE} Running The Following Commands"
-        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-80.log"
+        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$port.log"
         echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-$port-$rhost.txt"
         echo -e "${DOPE} whatweb -a 3 http://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
@@ -169,7 +169,7 @@ Enum_Web_SSL() {
     for port in $httpPortsLinesSSL; do
         wordlist="/usr/share/wordlists/dirb/big.txt"
         echo -e "${DOPE} Running The Following Commands"
-        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-80.log"
+        echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403,500' -o gobuster-$rhost-$port.txt -t 50 -k"
         echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-$rhost.txt"
         echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
