@@ -8,7 +8,7 @@ banner1() {
     printf "\e[1;92m   __/__/   /_\   \ |  |  \   __\/  _ \|  |       __/ __ \_/ ___\/  _ \|       | \e[0m\n"
     printf "\e[1;92m  |   |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
     printf "\e[1;92m  |___|____/\__\____|____/_|__|\_\____/|__|____|_  /\___  |\___  \____/|___|  /  \e[0m\n"
-    printf "\e[1;92m                                             \___\/  \__\/  \___\/      \___\/   \e[0mv3.1\n"
+    printf "\e[1;92m                                             \___\/  \__\/  \___\/      \___\/   \e[0mv3.0\n"
     printf "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                        \e[0m\n"
     printf "\n"
 
@@ -21,7 +21,7 @@ banner2() {
     printf "\e[1;92m ███████║██║   ██║   ██║   ██║   ██║    ██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║ \e[0m\n"
     printf "\e[1;92m ██╔══██║██║   ██║   ██║   ██║   ██║    ██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║ \e[0m\n"
     printf "\e[1;92m ██║  ██║╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║ \e[0m\n"
-    printf "\e[1;92m ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝ \e[0mv3.1\n"
+    printf "\e[1;92m ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝ \e[0mv3.0\n"
     printf "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                           \e[0m\n"
     printf "\n"
 
@@ -152,6 +152,42 @@ Enum_Web() {
         if [ "$wp1" -o "$wp2" -o "$wp3" ]; then
             echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
             gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+            Cewl() {
+                # wpscan --no-update --url http://$rhost-$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan-$rhost-$port.log
+                wpscan_process_id() {
+                    getpid=$(ps -elf | grep wpscan | grep -v grep | awk '{print $4}')
+                    procid=$(echo $getpid)
+                    wpscanid=$(expr "$procid" : '.* \(.*\)')
+                }
+                wpscan_process_id
+                if [ $? -eq 0 ]; then
+                    printf "\e[36m[+]\e[0m Waiting for WPSCAN PID $wpscanid Scan To Finish up \n"
+                    for i in $(seq 1 50); do
+                        printf "\e[93m#*\e[0m"
+                    done
+                    printf "\n"
+                    # echo "waiting for PID $procid to finish running NMAP script"
+                    while ps -p $wpscanid >/dev/null; do sleep 1; done
+                else
+                    :
+                fi
+                if [[ -n $(grep -i "User(s) Identified" wpscan-$rhost-$port.log) ]]; then
+                    grep -w -A 100 "User(s)" wpscan-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users.txt
+                    # create wordlist from web-page with cewl
+                    cewl http://$rhost:$port/ -m 3 -w cewl-list.txt
+                    # add john rules to cewl wordlist
+                    john --rules --wordlist=cewl-list.txt --stdout >john-cool-list.txt &>/dev/null
+                    # brute force again with wpscan
+                    wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute.txt
+                    if [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute.txt) ]]; then
+                        wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P john-cool-list.txt threads 50 | tee wordpress-john-cewl-brute.txt
+                    # if password not found then run it again with fasttrack.txt
+                    elif [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute.txt) ]]; then
+                        wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute.txt
+                    fi
+                fi
+            }
+            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -x bash -c "$(declare -f Cewl); Cewl; exec $SHELL" &>/dev/null
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://$rhost -t 32 | tee -a drupalscan-$rhost-80.log"
             droopescan scan drupal -u http://$rhost:$port/ -t 32 | tee -a drupalscan-$rhost-$port.log
@@ -162,7 +198,7 @@ Enum_Web() {
             echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url http://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log"
             davtest -move -sendbd auto -url http://$rhost:$port/ | tee -a davtestscan-$port.log
         elif grep -i "magento" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost:$port/ | tee -a magescan-$rhost-$port.log"
+            echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost/ | tee -a magescan-$rhost-$port.log"
             cd /opt/magescan
             bin/magescan scan:all http://$rhost:$port/ | tee -a magento-$rhost-$port.log
             cd - &>/dev/null
@@ -218,8 +254,44 @@ Enum_Web_SSL() {
             :
         fi
         if grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
-            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "wpscan --no-update --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+            echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan2-$rhost-$port.log"
+            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan2-$rhost-$port.log; exec $SHELL" &>/dev/null
+            Cewl2() {
+                # wpscan --no-update --url http://$rhost-$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan-$rhost-$port.log
+                wpscan_process_id() {
+                    getpid=$(ps -elf | grep wpscan | grep -v grep | awk '{print $4}')
+                    procid=$(echo $getpid)
+                    wpscanid=$(expr "$procid" : '.* \(.*\)')
+                }
+                wpscan_process_id
+                if [ $? -eq 0 ]; then
+                    printf "\e[36m[+]\e[0m Waiting for WPSCAN PID $wpscanid Scan To Finish up \n"
+                    for i in $(seq 1 50); do
+                        printf "\e[93m#*\e[0m"
+                    done
+                    printf "\n"
+                    # echo "waiting for PID $procid to finish running NMAP script"
+                    while ps -p $wpscanid >/dev/null; do sleep 1; done
+                else
+                    :
+                fi
+                if [[ -n $(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
+                    grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
+                    # create wordlist from web-page with cewl
+                    cewl https://$rhost:$port/ -m 3 -w cewl-list2.txt
+                    # add john rules to cewl wordlist
+                    john --rules --wordlist=cewl-list2.txt --stdout >john-cool-list2.txt &>/dev/null
+                    # brute force again with wpscan
+                    wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
+                    if [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute2.txt) ]]; then
+                        wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
+                    # if password not found then run it again with fasttrack.txt
+                    elif [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute2.txt) ]]; then
+                        wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
+                    fi
+                fi
+            }
+            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -x bash -c "$(declare -f Cewl2); Cewl2; exec $SHELL" &>/dev/null
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee -a drupalscan-$rhost-$port.log"
             droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
@@ -229,12 +301,6 @@ Enum_Web_SSL() {
         elif grep -i "WebDAV" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log"
             davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$port.log
-        elif grep -i "magento" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all https://$rhost:$port/ | tee -a magescan-$rhost-$port.log"
-            cd /opt/magescan
-            bin/magescan scan:all https://$rhost:$port/ | tee -a magento-$rhost-$port.log
-            cd - &>/dev/null
-            echo -e "${DOPE} Consider crawling site with this wordlist: /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt"
         else
             :
         fi
