@@ -312,7 +312,7 @@ ftp_scan() {
     portfilenameFTP=openportsFTP-$rhost.txt
     # echo $portfilenameSSL
     PortsLinesFTP=$(cat $portfilenameFTP)
-    if [ -n openportsFTP-$rhost.txt ]; then
+    if [[ -s openportsFTP-$rhost.txt ]]; then
         for ftp_port in $PortsLinesFTP; do
             echo -e "${DOPE} Running nmap ftp script scan on port: $ftp_port"
             nmap -sV -Pn -p $ftp_port --script=ftp-anon,ftp-bounce,ftp-libopie,ftp-proftpd-backdoor,ftp-vsftpd-backdoor,ftp-vuln-cve2010-4221 -v -oA nmap/ftp-enum $rhost
@@ -391,7 +391,7 @@ Enum_SNMP() {
     fi
     grep -i "161/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan-$rhost.txt
     if (grep -i "161/udp   open|filtered" nmap/udp-$rhost.nmap); then
-        echo -e "${DOPE} SNMP port appears to be filtered"
+        echo -e "${NOTDOPE} SNMP port appears to be filtered"
         return 0
     elif (grep -q "161" udp-scan-$rhost.txt); then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
