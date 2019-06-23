@@ -81,7 +81,7 @@ Full_TCP_Scan_All() {
         echo ""
         echo -e "${DOPE} Scanning all hosts"
         echo -e "${DOPE} Running: nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host In new Terminal Window."
-        gnome-terminal --geometry 105x26-0+0 -- bash -c "nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 105x26-0+0 -- bash -c "nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host; exec $SHELL" &>/dev/null
     fi
 }
 
@@ -115,17 +115,18 @@ Enum_Web() {
         echo -e "${DOPE} whatweb -a 3 http://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
+        echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost"
         curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
-        gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u http://$rhost:$port -w $wordlist2 -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 http://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u http://$rhost:$port -w $wordlist2 -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 161x31--12+157 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "whatweb -a 3 http://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
         echo -e "${DOPE} For a more thorough Web crawl enumeration, consider Running: "
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-$rhost-$port.log"
         cwd=$(pwd)
         mkdir -p eyewitness-report-$rhost && cd /opt/EyeWitness
-        gnome-terminal --geometry 105x25+0-0 -- bash -c "./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 81x34--12-17 -- bash -c "./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost; exec $SHELL" &>/dev/null
         cd - &>/dev/null
         # fi
         whatweb_process_id() {
@@ -150,7 +151,7 @@ Enum_Web() {
         wp3=$(grep -i "wp-content" gobuster-$rhost-$port.txt)
         if [ "$wp1" -o "$wp2" -o "$wp3" ]; then
             echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
-            gnome-terminal --geometry 123x35-0+0 -- bash -c "wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://$rhost -t 32 | tee -a drupalscan-$rhost-80.log"
             droopescan scan drupal -u http://$rhost:$port/ -t 32 | tee -a drupalscan-$rhost-$port.log
@@ -193,11 +194,11 @@ Enum_Web_SSL() {
         echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
         curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
-        gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x25-0-0 -- bash -c "sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 116x12+964+519 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 120x34+18+502 -- bash -c "sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log; exec $SHELL" &>/dev/null
 
         whatweb_process_id() {
             getpid=$(ps -elf | grep whatweb | grep -v grep | awk '{print $4}')
@@ -218,7 +219,7 @@ Enum_Web_SSL() {
         fi
         if grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
-            gnome-terminal --geometry 123x35-0+0 -- bash -c "wpscan --no-update --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "wpscan --no-update --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee -a drupalscan-$rhost-$port.log"
             droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
@@ -252,7 +253,7 @@ ftp_scan() {
 # }
 
 Intense_Nmap_UDP_Scan() {
-    gnome-terminal --geometry 105x25-0-0 -- bash -c "nmap -sUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp-$rhost $rhost; exec $SHELL" &>/dev/null
+    gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "nmap -sUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp-$rhost $rhost; exec $SHELL" &>/dev/null
     printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
 }
 
