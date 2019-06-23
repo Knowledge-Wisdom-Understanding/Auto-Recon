@@ -108,17 +108,25 @@ Enum_Web() {
     httpPortsLines=$(cat $portfilename)
     for port in $httpPortsLines; do
         wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
+        wordlist2="/usr/share/seclists/Discovery/Web-Content/common.txt"
         echo -e "${DOPE} Running The Following Commands"
-        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$port.log"
+        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log"
         echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-$port-$rhost.txt"
         echo -e "${DOPE} whatweb -a 3 http://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
-        echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds | tee uniscan-$rhost-$port.log"
-        curl http://$rhost:$port/robots.txt -o robots-$rhost-$port.txt &>/dev/null
-        gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -host http://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
+        echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
+        curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
+        gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u http://$rhost:$port -w $wordlist2 -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50; exec $SHELL" &>/dev/null
+        gnome-terminal --geometry 105x26-0+0 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 http://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$rhost:$port -qweds | tee uniscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
+        echo -e "${DOPE} For a more thorough Web crawl enumeration, consider Running: "
+        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-$rhost-$port.log"
+        cwd=$(pwd)
+        mkdir -p eyewitness-report-$rhost && cd /opt/EyeWitness
+        gnome-terminal --geometry 105x25+0-0 -- bash -c "./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost; exec $SHELL" &>/dev/null
+        cd - &>/dev/null
         # fi
         whatweb_process_id() {
             getpid=$(ps -elf | grep whatweb | grep -v grep | awk '{print $4}')
@@ -137,9 +145,12 @@ Enum_Web() {
         else
             :
         fi
-        if grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found WordPress! Running wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php --enumerate p,t,u | tee -a wpscan-$rhost-$port.log"
-            gnome-terminal --geometry 123x35-0+0 -- bash -c "wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php --enumerate p,t,u | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+        wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
+        wp2=$(grep -i "wp-" nmap/http-vuln-scan.nmap)
+        wp3=$(grep -i "wp-content" gobuster-$rhost-$port.txt)
+        if [ "$wp1" -o "$wp2" -o "$wp3" ]; then
+            echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
+            gnome-terminal --geometry 123x35-0+0 -- bash -c "wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://$rhost -t 32 | tee -a drupalscan-$rhost-80.log"
             droopescan scan drupal -u http://$rhost:$port/ -t 32 | tee -a drupalscan-$rhost-$port.log
@@ -149,6 +160,12 @@ Enum_Web() {
         elif grep -i "WebDAV" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url http://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log"
             davtest -move -sendbd auto -url http://$rhost:$port/ | tee -a davtestscan-$port.log
+        elif grep -i "magento" whatweb-$rhost-$port.log 2>/dev/null; then
+            echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost/ | tee -a magescan-$rhost-$port.log"
+            cd /opt/magescan
+            bin/magescan scan:all http://$rhost:$port/ | tee -a magento-$rhost-$port.log
+            cd - &>/dev/null
+            echo -e "${DOPE} Consider crawling site with this wordlist: /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt"
         else
             :
         fi
@@ -158,7 +175,8 @@ Enum_Web() {
 Web_Vulns() {
     grep -w "http" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-$rhost.txt
     echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
-    nmap -Pn -sV --script=http-vuln*.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-vuln-scan $rhost
+    nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-vuln-scan $rhost
+    nmap -Pn -sV -sC -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-default-script-scan $rhost
 }
 
 Enum_Web_SSL() {
@@ -167,18 +185,18 @@ Enum_Web_SSL() {
     # echo $portfilenameSSL
     httpPortsLinesSSL=$(cat $portfilenameSSL)
     for port in $httpPortsLinesSSL; do
-        wordlist="/usr/share/wordlists/dirb/big.txt"
+        wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
         echo -e "${DOPE} Running The Following Commands"
-        echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403,500' -o gobuster-$rhost-$port.txt -t 50 -k"
+        echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k"
         echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-$rhost.txt"
         echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
-        echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds | tee uniscan-$rhost-$port.log"
-        curl https://$rhost:$port/robots.txt -o robots-$rhost-$port.txt &>/dev/null
-        gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403,500' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
+        echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
+        curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
+        gnome-terminal --geometry 123x35-0+0 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
+        gnome-terminal --geometry 105x26+0+0 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25+0-0 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u https://$rhost:$port -qweds | tee uniscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --geometry 105x25-0-0 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
         gnome-terminal --geometry 105x25-0-0 -- bash -c "sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log; exec $SHELL" &>/dev/null
 
         whatweb_process_id() {
@@ -199,8 +217,8 @@ Enum_Web_SSL() {
             :
         fi
         if grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found WordPress! Running wpscan --url https://$rhost:$port/ --enumerate p,t,u | tee -a wpscan-$rhost-$port.log"
-            wpscan --url https://$rhost:$port/ --wp-content-dir wp-login.php --enumerate p,t,u | tee -a wpscan.log
+            echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
+            gnome-terminal --geometry 123x35-0+0 -- bash -c "wpscan --no-update --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log; exec $SHELL" &>/dev/null
         elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee -a drupalscan-$rhost-$port.log"
             droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
@@ -260,6 +278,8 @@ Enum_SMB() {
 
         echo -e "\e[92m[+]\e[0m Running smbmap" | tee -a smb-scan-$rhost.txt
         smbmap -H $rhost | tee -a smb-scan-$rhost.txt
+        smbmap -u null -p "" -H $rhost | tee -a smb-scan-$rhost.txt
+        smbmap -u null -p "" -H $rhost -R | tee -a smb-scan-$rhost.txt
 
         echo -e "\e[92m[+]\e[0m All checks completed Successfully" | tee -a smb-scan-$rhost.txt
     fi
@@ -330,11 +350,22 @@ Enum_Oracle() {
     cd $cwd
     grep -w "1521/tcp open" nmap/full-tcp-scan-$rhost.nmap | cut -d "/" -f 1 >allopenports-$rhost.txt
     if (grep -i "1521" allopenports-$rhost.txt); then
-        echo -e "${DOPE} Found Oracle! Running ODAT Enumeration"
+        echo -e "${DOPE} Found Oracle! Running NMAP Enumeration"
+        nmap -sV -p 1521 --script oracle-enum-users.nse,oracle-sid-brute.nse,oracle-tns-version.nse -oA nmap/oracle-$rhost $rhost
+        echo -e "${DOPE} Found Oracle! Running tnscmd10g Enumeration"
+        tnscmd10g ping -h $rhost -p 1521 | tee -a oracle-$rhost.log
+        tnscmd10g version -h $rhost -p 1521 | tee -a oracle-$rhost.log
+        echo -e "${DOPE} Found Oracle! Running OSCANNER Enumeration"
+        oscanner -v -s $rhost -P 1521 | tee -a oracle-$rhost.log
         cd /opt/odat/
+        echo -e "${DOPE} Running ODAT Enumeration"
+        ./odat.py tnscmd -s $rhost -p 1521 --ping
+        ./odat.py tnscmd -s $rhost -p 1521 --version
+        ./odat.py tnscmd -s $rhost -p 1521 --status
         ./odat.py sidguesser -s $rhost -p 1521
         ./odat.py passwordguesser -s $rhost -p 1521 -d XE --accounts-file accounts/accounts-multiple.txt
         cd - &>/dev/null
+        rm allopenports-$rhost.txt
     fi
 }
 Enum_Oracle
@@ -350,13 +381,16 @@ Clean_Up() {
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
-        mv live-hosts-ip.txt $rhost-report
+        mv live-hosts-ip.txt $rhost-report &>/dev/null
+        cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     else
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
-        mv live-hosts-ip.txt $rhost-report
+        mv live-hosts-ip.txt $rhost-report &>/dev/null
+        cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     fi
+
 }
 Clean_Up
 
