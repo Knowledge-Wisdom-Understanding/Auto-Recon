@@ -1,33 +1,54 @@
 #!/usr/bin/env bash
 
-
 # Check if user is root
 if [[ $EUID -ne 0 ]]; then
     echo "This script must be run as root" 1>&2
     exit 1
 fi
 
-echo '[+] Running: apt-get update -y'
+DOPE='\e[92m[+]\e[0m'
+
+echo -e "${DOPE} Running: apt-get update -y"
 apt-get update -y
 
-echo '[+] Downloading Dependencies'
+echo -e "${DOPE} Downloading dirsearch repository in /opt folder"
 cd /opt
 git clone https://github.com/maurosoria/dirsearch.git
 
-echo '[+] Downloading Dependencies'
+echo -e "${DOPE} Updating vulnscan.py"
 cd /opt
 git clone https://github.com/RoliSoft/ReconScan.git
 cd ReconScan
 chmod +x vulnscan.py
 ./vulnscan.py -u
 
-echo '[+] Downloading Dependencies'
-apt install odat
+echo -e "${DOPE} Installing magescan and dependencies"
+cd /opt
+git clone https://github.com/steverobbins/magescan magescan
+cd magescan
+curl -sS https://getcomposer.org/installer | php
+php composer.phar install
+apt install php7.3-xml -y
+apt install php-guzzlehttp-psr7 -y
+php --ini
+apt install php7.3-curl -y
+
+echo -e "${DOPE} Installing EyeWitness"
+apt install eyewitness -y
+cd /opt
+git clone https://github.com/FortyNorthSecurity/EyeWitness.git
+cd EyeWitness && cd setup
+chmod +x setup.sh
+./setup.sh
+
+echo -e "${DOPE} Installing ODAT"
+apt install odat -y
 cd /opt
 git clone https://github.com/quentinhardy/odat.git
 
+cd /opt
 cd Auto-Recon
 chmod +x auto-recon.sh
 chmod +x smb_enum_all.sh
 
-echo '[+] Congratulations, All tools installed successfully!'
+echo -e "${DOPE} Congratulations, All tools installed successfully!"
