@@ -162,7 +162,7 @@ Enum_Web() {
             echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url http://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log"
             davtest -move -sendbd auto -url http://$rhost:$port/ | tee -a davtestscan-$port.log
         elif grep -i "magento" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost/ | tee -a magescan-$rhost-$port.log"
+            echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost:$port/ | tee -a magescan-$rhost-$port.log"
             cd /opt/magescan
             bin/magescan scan:all http://$rhost:$port/ | tee -a magento-$rhost-$port.log
             cd - &>/dev/null
@@ -229,6 +229,12 @@ Enum_Web_SSL() {
         elif grep -i "WebDAV" whatweb-$rhost-$port.log 2>/dev/null; then
             echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log"
             davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$port.log
+        elif grep -i "magento" whatweb-$rhost-$port.log 2>/dev/null; then
+            echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all https://$rhost:$port/ | tee -a magescan-$rhost-$port.log"
+            cd /opt/magescan
+            bin/magescan scan:all https://$rhost:$port/ | tee -a magento-$rhost-$port.log
+            cd - &>/dev/null
+            echo -e "${DOPE} Consider crawling site with this wordlist: /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt"
         else
             :
         fi
