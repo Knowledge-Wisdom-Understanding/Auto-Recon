@@ -60,27 +60,6 @@ banner1() {
 
 }
 banner1
-# banner2() {
-
-#     echo -e "\e[1;92m  █████╗ ██╗   ██╗████████╗ ██████╗     ██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗ \e[0m"
-#     echo -e "\e[1;92m ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗    ██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║ \e[0m"
-#     echo -e "\e[1;92m ███████║██║   ██║   ██║   ██║   ██║    ██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║ \e[0m"
-#     echo -e "\e[1;92m ██╔══██║██║   ██║   ██║   ██║   ██║    ██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║ \e[0m"
-#     echo -e "\e[1;92m ██║  ██║╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║ \e[0m"
-#     echo -e "\e[1;92m ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝ \e[0mv3.2"
-#     echo -e "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                           \e[0m"
-#     echo -e ""
-
-# }
-
-# Use a pseudo-random banner on program execution
-# shuffle_banners() {
-
-#     declare -a banners=(banner1 banner2)
-#     $(shuf -n1 -e "${banners[@]}")
-
-# }
-# shuffle_banners
 
 DOPE='\e[92m[+]\e[0m'
 NOTDOPE='\e[31m[+]\e[0m'
