@@ -1,40 +1,86 @@
 #!/usr/bin/env bash
 
+you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star() {
+    cat <<"EOF"
+                         .                               '      
+                         ;                         *            '   
+                     - --+- -                              *        '  
+                         !                           *                  *
+                         .          
+             .            
+             ;            
+         - --+- -         
+             !            
+             .            
+                        .               *   '*
+                        ;                       *
+                    - --+- -                         *
+                        !                                   *
+                        .                           *
+                                                         *                  
+                                         .                      .
+                                         .                      ;
+                                         :                  - --+- -
+                                         !           .          !
+      |\\._                              |        .             .
+      |   66__                           |_         +
+       \    _.P                       ,  | `.
+   ,    `) (                    --- --+-<#>-+- ---  --  -
+   )\   / __\__                       `._|_,'
+  / /  / -._);_)                         T
+ |  `\/  \ __|\                          |
+  \  ;    )  / )                         !
+   `\|   /__/ /__                        :         . : 
+     `\______)___)                       .       *
+
+__̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___
+   *  .  . *       *    .        .        .   *    ..        .        .   *    ..
+ .    *        .   ###     .      .        .            * .      .        .            *
+    *.   *        #####   .     *      *        *    .  .     *      *        *    .
+  ____       *  ######### *    .  *      .        .  *   .      .        .  *   .
+ /   /\  .     ###\#|#/###   ..    *    .      *  .  ..   * .    *    .      *  .  ..  *
+/___/  ^8/      ###\|/###  *    *            .      *   *     *  .      *   *
+|   ||%%(        # }|{  #
+|___|,  \\  ejm    }|{     ,            .  ,,   __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡  .                ,
+EOF
+}
+you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star
+
 banner1() {
 
-    printf "\e[1;92m   _____________                  ________________                               \e[0m\n"
-    printf "\e[1;92m  /___/___      \         ____   /___/__          \                    ____      \e[0m\n"
-    printf "\e[1;92m      /  /   _   \_____ _/_/  |______|__|_____ *   \__________________/ /  |___  \e[0m\n"
-    printf "\e[1;92m   __/__/   /_\   \ |  |  \   __\/  _ \|  |       __/ __ \_/ ___\/  _ \|       | \e[0m\n"
-    printf "\e[1;92m  |   |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m\n"
-    printf "\e[1;92m  |___|____/\__\____|____/_|__|\_\____/|__|____|_  /\___  |\___  \____/|___|  /  \e[0m\n"
-    printf "\e[1;92m                                             \___\/  \__\/  \___\/      \___\/   \e[0mv3.0\n"
-    printf "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                        \e[0m\n"
-    printf "\n"
+    echo -e "\e[1;94m   _____________          ____    ________________                               \e[0m"
+    echo -e "\e[1;94m  /___/___      \        /  / |  /___/__          \                   _____      \e[0m"
+    echo -e "\e[1;94m      /  /   _   \______/__/  |______|__|_____ *   \_________________/__/  |___  \e[0m"
+    echo -e "\e[1;94m   __/__/   /_\   \ |  |  \   __\/  _ \|  |       __/ __ \_/ ___\/  _ \|       | \e[0m"
+    echo -e "\e[1;94m  |   |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m"
+    echo -e "\e[1;94m  |___|____/\__\____|____/_|__|\_\____/|__|____|_  /\___  |\___  \____/|___|  /  \e[0m"
+    echo -e "\e[1;94m                                             \___\/  \__\/  \___\/      \___\/   \e[0mv3.2"
+    echo -e "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                        \e[0m"
+    echo -e ""
 
 }
+banner1
+# banner2() {
 
-banner2() {
+#     echo -e "\e[1;92m  █████╗ ██╗   ██╗████████╗ ██████╗     ██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗ \e[0m"
+#     echo -e "\e[1;92m ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗    ██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║ \e[0m"
+#     echo -e "\e[1;92m ███████║██║   ██║   ██║   ██║   ██║    ██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║ \e[0m"
+#     echo -e "\e[1;92m ██╔══██║██║   ██║   ██║   ██║   ██║    ██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║ \e[0m"
+#     echo -e "\e[1;92m ██║  ██║╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║ \e[0m"
+#     echo -e "\e[1;92m ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝ \e[0mv3.2"
+#     echo -e "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                           \e[0m"
+#     echo -e ""
 
-    printf "\e[1;92m  █████╗ ██╗   ██╗████████╗ ██████╗     ██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗ \e[0m\n"
-    printf "\e[1;92m ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗    ██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║ \e[0m\n"
-    printf "\e[1;92m ███████║██║   ██║   ██║   ██║   ██║    ██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║ \e[0m\n"
-    printf "\e[1;92m ██╔══██║██║   ██║   ██║   ██║   ██║    ██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║ \e[0m\n"
-    printf "\e[1;92m ██║  ██║╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║ \e[0m\n"
-    printf "\e[1;92m ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝ \e[0mv3.0\n"
-    printf "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                           \e[0m\n"
-    printf "\n"
-
-}
+# }
 
 # Use a pseudo-random banner on program execution
-shuffle_banners() {
+# shuffle_banners() {
 
-    declare -a banners=(banner1 banner2)
-    $(shuf -n1 -e "${banners[@]}")
+#     declare -a banners=(banner1 banner2)
+#     $(shuf -n1 -e "${banners[@]}")
 
-}
-shuffle_banners
+# }
+# shuffle_banners
 
 DOPE='\e[92m[+]\e[0m'
 NOTDOPE='\e[31m[+]\e[0m'
@@ -116,6 +162,8 @@ Enum_Web() {
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
         echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost"
+        echo -e "${DOPE} Checking for Web Application Firewall... wafw00f http://$rhost:$port/"
+        wafw00f http://$rhost:$port/ | tee -a wafw00f-$rhost-$port.txt
         curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u http://$rhost:$port -w $wordlist2 -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 161x31--12+157 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log; exec $SHELL" &>/dev/null
@@ -125,7 +173,7 @@ Enum_Web() {
         echo -e "${DOPE} For a more thorough Web crawl enumeration, consider Running: "
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-$rhost-$port.log"
         cwd=$(pwd)
-        mkdir -p eyewitness-report-$rhost && cd /opt/EyeWitness
+        mkdir -p eyewitness-report-"$rhost" && cd /opt/EyeWitness
         gnome-terminal --zoom=0.9 --geometry 81x34--12-17 -- bash -c "./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost; exec $SHELL" &>/dev/null
         cd - &>/dev/null
         # fi
@@ -161,7 +209,7 @@ Enum_Web() {
                 }
                 wpscan_process_id
                 if [ $? -eq 0 ]; then
-                    printf "\e[36m[+]\e[0m Waiting for WPSCAN PID $wpscanid Scan To Finish up \n"
+                    echo -e "\e[36m[+]\e[0m Waiting for WPSCAN PID $wpscanid Scan To Finish up "
                     for i in $(seq 1 50); do
                         printf "\e[93m#*\e[0m"
                     done
@@ -229,6 +277,8 @@ Enum_Web_SSL() {
         echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-$rhost:$port.log"
         echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
+        echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
+        wafw00f https://$rhost:$port/ | tee -a wafw00f-$rhost-$port.txt
         curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
