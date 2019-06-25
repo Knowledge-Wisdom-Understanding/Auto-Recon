@@ -63,6 +63,9 @@ banner1
 
 DOPE='\e[92m[+]\e[0m'
 NOTDOPE='\e[31m[+]\e[0m'
+TEAL='\e[96m'
+YELLOW='\e93m'
+END='\e[0m'
 
 helpFunction() {
     echo -e "${DOPE} Usage: $0 TARGET-IP"
@@ -150,7 +153,7 @@ Enum_Web() {
         gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "whatweb -a 3 http://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
         echo -e "${DOPE} For a more thorough Web crawl enumeration, consider Running: "
-        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-$rhost-$port.log"
+        echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log"
         cwd=$(pwd)
         mkdir -p eyewitness-report-"$rhost" && cd /opt/EyeWitness
         gnome-terminal --zoom=0.9 --geometry 81x34--12--13 -- bash -c "./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost; exec $SHELL" &>/dev/null
@@ -239,8 +242,8 @@ Enum_Web() {
 Web_Vulns() {
     grep -w "http" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-$rhost.txt
     echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
-    nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-vuln-scan $rhost
-    nmap -Pn -sV -sC -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-default-script-scan $rhost
+    nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
+    # nmap -Pn -sV --script=dns-brute.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-dns-script-scan $rhost
 }
 
 Enum_Web_SSL() {
@@ -438,9 +441,9 @@ FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     echo -e "${DOPE} Running Full Nmap TCP port Scan For Good Measuere, just in case we missed one ;)"
     # nmap -vv -Pn -A -O -script-args=unsafe=1 -sS -p 1521 -T4 -oA nmap/full-tcp-scan-$rhost $rhost
     nmap -vv -Pn -A -O -script-args=unsafe=1 -sS -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost
-    printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[96m[+] Checking Vulnerabilities \e[0m\n"
-    printf "\e[93m#################################################################################################### \e[0m\n"
+    echo -e "${YELLOW} #################################################################################################### ${END}"
+    echo -e "${TEAL} ########################### Checking Vulnerabilities  ################################################ ${END}"
+    echo -e "${YELLOW} #################################################################################################### ${END}"
     cd /opt/ReconScan && python3 vulnscan.py $cwd/nmap/full-tcp-scan-$rhost.xml
     cd - &>/dev/null
 }
@@ -497,14 +500,14 @@ Clean_Up() {
 Clean_Up
 
 footer() {
-    printf "\e[93m#################################################################################################### \e[0m\n"
-    printf "\e[96m##############################    See You Space Cowboy...  ######################################### \e[0m\n"
-    printf "\e[93m#################################################################################################### \e[0m\n"
+    echo -e "${YELLOW} #################################################################################################### ${END}"
+    echo -e "${TEAL} ##############################    See You Space Cowboy...  ########################################### ${END}"
+    echo -e "${YELLOW} #################################################################################################### ${END}"
 }
 footer
 
 traperr() {
-    echo "ERROR: ${BASH_SOURCE[1]} at about ${BASH_LINENO[0]}"
+    echo -e "${NOTDOPE} ERROR: ${BASH_SOURCE[1]} at about ${BASH_LINENO[0]}"
 }
 
 set -o errtrace
