@@ -153,7 +153,7 @@ Enum_Web() {
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-$rhost-$port.log"
         cwd=$(pwd)
         mkdir -p eyewitness-report-"$rhost" && cd /opt/EyeWitness
-        gnome-terminal --zoom=0.9 --geometry 81x34--12-17 -- bash -c "./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 81x34--12--13 -- bash -c "./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost; exec $SHELL" &>/dev/null
         cd - &>/dev/null
         # fi
         whatweb_process_id() {
