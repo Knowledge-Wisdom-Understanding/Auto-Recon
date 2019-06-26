@@ -387,8 +387,8 @@ Enum_SNMP() {
         :
     fi
     grep -i "161/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan-$rhost.txt
-    if (grep -i "161/udp   open|filtered" nmap/udp-$rhost.nmap); then
-        echo -e "${NOTDOPE} SNMP port appears to be filtered"
+    if [ $(grep -i "161/udp   open|filtered" nmap/udp-$rhost.nmap) ]; then
+        # echo -e "${NOTDOPE} SNMP port appears to be filtered"
         return 0
     elif (grep -q "161" udp-scan-$rhost.txt); then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
