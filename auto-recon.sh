@@ -352,6 +352,14 @@ ftp_scan() {
     fi
 }
 
+nfs_enum() {
+    grep -w "/tcp" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-nfs.txt
+    if [ $(grep -i "111" openports-nfs.txt) ]; then
+        echo -e "${DOPE} Running nmap -p 111 --script=nfs-ls,nfs-statfs,nfs-showmount $rhost"
+        nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost
+    fi
+}
+
 # java_rmi_scan() {
 #     grep -i "something" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports3.txt
 # }
@@ -364,29 +372,29 @@ Intense_Nmap_UDP_Scan() {
 Enum_SMB() {
     grep -i "/tcp" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports2.txt
     if [ $(grep -i "445" openports2.txt) ] || [ $(grep -i "139" openports2.txt) ]; then
-        echo -e "\e[92m[+]\e[0m Running SMBCLIENT, Checking shares" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-scan-$rhost.txt
         smbclient -L //$rhost -U "guest"% | tee -a smb-scan-$rhost.txt
 
-        echo -e "\e[92m[+]\e[0m Running ENUM4LINUX" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running ENUM4LINUX" | tee -a smb-scan-$rhost.txt
         enum4linux -av $rhost | tee -a smb-scan-$rhost.txt
 
-        echo -e "\e[92m[+]\e[0m Running NMBLOOKUP" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running NMBLOOKUP" | tee -a smb-scan-$rhost.txt
         nmblookup -A $rhost | tee -a smb-scan-$rhost.txt
 
         # create an nmap directory if one doesn't exist
 
-        echo -e "\e[92m[+]\e[0m Running All SMB nmap Vuln / Enum checks" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running All SMB nmap Vuln / Enum checks" | tee -a smb-scan-$rhost.txt
         nmap -vv -sV -Pn -p139,445 --script smb-enum-domains.nse,smb-enum-groups.nse,smb-enum-processes.nse,smb-enum-sessions.nse,smb-enum-shares.nse,smb-enum-users.nse,smb-ls.nse,smb-mbenum.nse,smb-os-discovery.nse,smb-print-text.nse,smb-psexec.nse,smb-security-mode.nse,smb-server-stats.nse,smb-system-info.nse,smb-vuln-conficker.nse,smb-vuln-cve2009-3103.nse,smb-vuln-ms06-025.nse,smb-vuln-ms07-029.nse,smb-vuln-ms08-067.nse,smb-vuln-ms10-054.nse,smb-vuln-ms10-061.nse,smb-vuln-ms17-010.nse --script-args=unsafe=1 -oA nmap/smbvulns-$rhost $rhost | tee -a smb-scan-$rhost.txt
 
-        echo -e "\e[92m[+]\e[0m Running NBTSCAN" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running NBTSCAN" | tee -a smb-scan-$rhost.txt
         nbtscan -rvh $rhost | tee -a smb-scan-$rhost.txt
 
-        echo -e "\e[92m[+]\e[0m Running smbmap" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running smbmap" | tee -a smb-scan-$rhost.txt
         smbmap -H $rhost | tee -a smb-scan-$rhost.txt
         smbmap -u null -p "" -H $rhost | tee -a smb-scan-$rhost.txt
         smbmap -u null -p "" -H $rhost -R | tee -a smb-scan-$rhost.txt
 
-        echo -e "\e[92m[+]\e[0m All checks completed Successfully" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} All checks completed Successfully" | tee -a smb-scan-$rhost.txt
     fi
 }
 
@@ -394,6 +402,7 @@ getUpHosts
 Open_Ports_Scan
 Web_Vulns
 ftp_scan
+nfs_enum
 Enum_Web
 Enum_Web_SSL
 Intense_Nmap_UDP_Scan
@@ -483,6 +492,7 @@ Clean_Up() {
     rm openports2.txt
     rm udp-scan-$rhost.txt
     rm openportsFTP-$rhost.txt
+    rm openports-nfs.txt
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
