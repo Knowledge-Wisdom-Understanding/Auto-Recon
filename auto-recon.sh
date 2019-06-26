@@ -18,7 +18,7 @@ banner1
 DOPE='\e[92m[+]\e[0m'
 NOTDOPE='\e[31m[+]\e[0m'
 TEAL='\e[96m'
-YELLOW='\e93m'
+YELLOW='\e[93m'
 END='\e[0m'
 
 helpFunction() {
@@ -131,7 +131,7 @@ Enum_Web() {
             :
         fi
         wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
-        wp2=$(grep -i "wp-" nmap/http-vuln-scan.nmap)
+        wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
         wp3=$(grep -i "wp-content" gobuster-$rhost-$port.txt)
         if [ "$wp1" -o "$wp2" -o "$wp3" ]; then
             echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
@@ -205,92 +205,94 @@ Enum_Web_SSL() {
     portfilenameSSL=openportsSSL-$rhost.txt
     # echo $portfilenameSSL
     httpPortsLinesSSL=$(cat $portfilenameSSL)
-    for port in $httpPortsLinesSSL; do
-        wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
-        echo -e "${DOPE} Running The Following Commands"
-        echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k"
-        echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-$rhost.txt"
-        echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-$rhost:$port.log"
-        echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
-        echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
-        echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
-        wafw00f https://$rhost:$port/ | tee -a wafw00f-$rhost-$port.txt
-        curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 116x12+964+519 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-$rhost-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 120x34+18+502 -- bash -c "sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log; exec $SHELL" &>/dev/null
+    if [[ -s openportsSSL-$rhost.txt ]]; then
+        for port in $httpPortsLinesSSL; do
+            wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
+            echo -e "${DOPE} Running The Following Commands"
+            echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k"
+            echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-$rhost.txt"
+            echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-$rhost:$port.log"
+            echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
+            echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
+            echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
+            wafw00f https://$rhost:$port/ | tee -a wafw00f-$rhost-$port.txt
+            curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-$rhost-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-$rhost.txt; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 116x12+964+519 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-ssl-$rhost-$port.log; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 120x34+18+502 -- bash -c "sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log; exec $SHELL" &>/dev/null
 
-        whatweb_process_id() {
-            getpid=$(ps -elf | grep whatweb | grep -v grep | awk '{print $4}')
-            procid=$(echo $getpid)
-            whatwebid=$(expr "$procid" : '.* \(.*\)')
-        }
-        whatweb_process_id
-        if [ $? -eq 0 ]; then
-            printf "\e[36m[+]\e[0m Waiting for WHATWEB PID $whatwebid Scan To Finish up \n"
-            for i in $(seq 1 50); do
-                printf "\e[93m#*\e[0m"
-            done
-            printf "\n"
-            # echo "waiting for PID $procid to finish running NMAP script"
-            while ps -p $whatwebid >/dev/null; do sleep 1; done
-        else
-            :
-        fi
-        if grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan2-$rhost-$port.log"
-            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan2-$rhost-$port.log; exec $SHELL" &>/dev/null
-            Cewl2() {
-                # wpscan --no-update --url http://$rhost-$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan-$rhost-$port.log
-                wpscan_process_id() {
-                    getpid=$(ps -elf | grep wpscan | grep -v grep | awk '{print $4}')
-                    procid=$(echo $getpid)
-                    wpscanid=$(expr "$procid" : '.* \(.*\)')
-                }
-                wpscan_process_id
-                if [ $? -eq 0 ]; then
-                    printf "\e[36m[+]\e[0m Waiting for WPSCAN PID $wpscanid Scan To Finish up \n"
-                    for i in $(seq 1 50); do
-                        printf "\e[93m#*\e[0m"
-                    done
-                    printf "\n"
-                    # echo "waiting for PID $procid to finish running NMAP script"
-                    while ps -p $wpscanid >/dev/null; do sleep 1; done
-                else
-                    :
-                fi
-                if [[ -n $(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
-                    grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
-                    # create wordlist from web-page with cewl
-                    cewl https://$rhost:$port/ -m 3 -w cewl-list2.txt
-                    # add john rules to cewl wordlist
-                    john --rules --wordlist=cewl-list2.txt --stdout >john-cool-list2.txt &>/dev/null
-                    # brute force again with wpscan
-                    wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
-                    if [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute2.txt) ]]; then
-                        wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
-                    # if password not found then run it again with fasttrack.txt
-                    elif [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute2.txt) ]]; then
-                        wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
-                    fi
-                fi
+            whatweb_process_id() {
+                getpid=$(ps -elf | grep whatweb | grep -v grep | awk '{print $4}')
+                procid=$(echo $getpid)
+                whatwebid=$(expr "$procid" : '.* \(.*\)')
             }
-            gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -x bash -c "$(declare -f Cewl2); Cewl2; exec $SHELL" &>/dev/null
-        elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee -a drupalscan-$rhost-$port.log"
-            droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
-        elif grep -i "Joomla" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found Joomla! Running joomscan --url https://$rhost/ -ec | tee -a joomlascan-$rhost-$port.log"
-            joomscan --url https://$rhost:$port/ -ec | tee -a joomlascan-$rhost-$port.log
-        elif grep -i "WebDAV" whatweb-$rhost-$port.log 2>/dev/null; then
-            echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log"
-            davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$port.log
-        else
-            :
-        fi
-    done
+            whatweb_process_id
+            if [ $? -eq 0 ]; then
+                printf "\e[36m[+]\e[0m Waiting for WHATWEB PID $whatwebid Scan To Finish up \n"
+                for i in $(seq 1 50); do
+                    printf "\e[93m#*\e[0m"
+                done
+                printf "\n"
+                # echo "waiting for PID $procid to finish running NMAP script"
+                while ps -p $whatwebid >/dev/null; do sleep 1; done
+            else
+                :
+            fi
+            if [ $(grep -i "WordPress" whatweb-ssl-$rhost-$port.log 2>/dev/null) ]; then
+                echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan2-$rhost-$port.log"
+                gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -- bash -c "wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan2-$rhost-$port.log; exec $SHELL" &>/dev/null
+                Cewl2() {
+                    # wpscan --no-update --url http://$rhost-$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan-$rhost-$port.log
+                    wpscan_process_id() {
+                        getpid=$(ps -elf | grep wpscan | grep -v grep | awk '{print $4}')
+                        procid=$(echo $getpid)
+                        wpscanid=$(expr "$procid" : '.* \(.*\)')
+                    }
+                    wpscan_process_id
+                    if [ $? -eq 0 ]; then
+                        printf "\e[36m[+]\e[0m Waiting for WPSCAN PID $wpscanid Scan To Finish up \n"
+                        for i in $(seq 1 50); do
+                            printf "\e[93m#*\e[0m"
+                        done
+                        printf "\n"
+                        # echo "waiting for PID $procid to finish running NMAP script"
+                        while ps -p $wpscanid >/dev/null; do sleep 1; done
+                    else
+                        :
+                    fi
+                    if [[ -n $(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
+                        grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
+                        # create wordlist from web-page with cewl
+                        cewl https://$rhost:$port/ -m 3 -w cewl-list2.txt
+                        # add john rules to cewl wordlist
+                        john --rules --wordlist=cewl-list2.txt --stdout >john-cool-list2.txt &>/dev/null
+                        # brute force again with wpscan
+                        wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
+                        if [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute2.txt) ]]; then
+                            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
+                        # if password not found then run it again with fasttrack.txt
+                        elif [[ -z $(grep -i "[SUCCESS]" wordpress-cewl-brute2.txt) ]]; then
+                            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
+                        fi
+                    fi
+                }
+                gnome-terminal --zoom=0.9 --geometry 108x68+1908--13 -x bash -c "$(declare -f Cewl2); Cewl2; exec $SHELL" &>/dev/null
+            elif grep -i "Drupal" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
+                echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee -a drupalscan-$rhost-$port.log"
+                droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
+            elif grep -i "Joomla" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
+                echo -e "${DOPE} Found Joomla! Running joomscan --url https://$rhost/ -ec | tee -a joomlascan-$rhost-$port.log"
+                joomscan --url https://$rhost:$port/ -ec | tee -a joomlascan-$rhost-$port.log
+            elif grep -i "WebDAV" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
+                echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log"
+                davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$port.log
+            else
+                :
+            fi
+        done
+    fi
 }
 
 ftp_scan() {
@@ -307,7 +309,7 @@ ftp_scan() {
 }
 
 nfs_enum() {
-    grep -w "/tcp" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-nfs.txt
+    grep -w "rpcbind" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-nfs.txt
     if [ $(grep -i "111" openports-nfs.txt) ]; then
         echo -e "${DOPE} Running nmap -p 111 --script=nfs-ls,nfs-statfs,nfs-showmount $rhost"
         nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost
@@ -404,9 +406,9 @@ FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     echo -e "${DOPE} Running Full Nmap TCP port Scan For Good Measuere, just in case we missed one ;)"
     # nmap -vv -Pn -A -O -script-args=unsafe=1 -sS -p 1521 -T4 -oA nmap/full-tcp-scan-$rhost $rhost
     nmap -vv -Pn -A -O -script-args=unsafe=1 -sS -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost
-    echo -e "${YELLOW} #################################################################################################### ${END}"
-    echo -e "${TEAL} ########################### Checking Vulnerabilities  ################################################ ${END}"
-    echo -e "${YELLOW} #################################################################################################### ${END}"
+    echo -e "${YELLOW}#################################################################################################### ${END}"
+    echo -e "${TEAL}########################### Checking Vulnerabilities  ############################################## ${END}"
+    echo -e "${YELLOW}#################################################################################################### ${END}"
     cd /opt/ReconScan && python3 vulnscan.py $cwd/nmap/full-tcp-scan-$rhost.xml
     cd - &>/dev/null
 }
