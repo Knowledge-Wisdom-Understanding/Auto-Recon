@@ -311,7 +311,7 @@ ftp_scan() {
 nfs_enum() {
     grep -w "rpcbind" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-nfs.txt
     if [ $(grep -i "111" openports-nfs.txt) ]; then
-        echo -e "${DOPE} Running nmap -p 111 --script=nfs-ls,nfs-statfs,nfs-showmount $rhost"
+        echo -e "${DOPE} nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost"
         nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost
     fi
 }
