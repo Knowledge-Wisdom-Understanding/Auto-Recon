@@ -64,15 +64,15 @@ getUpHosts() {
     # cat $uphostfile
 }
 
-Full_TCP_Scan_All() {
-    Live_Host=live-hosts-ip.txt
-    if [ -e live-hosts-ip.txt ]; then
-        echo ""
-        echo -e "${DOPE} Scanning all hosts"
-        echo -e "${DOPE} Running: nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host In new Terminal Window."
-        gnome-terminal --zoom=0.9 --geometry 105x26-0+0 -- bash -c "nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host; exec $SHELL" &>/dev/null
-    fi
-}
+# Full_TCP_Scan_All() {
+#     Live_Host=live-hosts-ip.txt
+#     if [ -e live-hosts-ip.txt ]; then
+#         echo ""
+#         echo -e "${DOPE} Scanning all hosts"
+#         echo -e "${DOPE} Running: nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host In new Terminal Window."
+#         gnome-terminal --zoom=0.9 --geometry 105x26-0+0 -- bash -c "nmap -v -Pn -A -O -p- --max-retries 1 -sS --max-rate 500 -T4 -v -oA nmap/hostfilescan -iL $Live_Host; exec $SHELL" &>/dev/null
+#     fi
+# }
 
 Open_Ports_Scan() {
     echo -e "${DOPE} Scanning $rhost"
@@ -589,4 +589,3 @@ traperr() {
 
 set -o errtrace
 trap traperr ERR
-
