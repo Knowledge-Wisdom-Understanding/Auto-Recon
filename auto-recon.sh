@@ -58,7 +58,7 @@ getUpHosts() {
     nmap -sn $cidr_range/24 -oG /tmp/live-hosts.txt >/dev/null
     cat /tmp/live-hosts.txt | grep "Up" | cut -d " " -f2 >live-hosts-ip.txt
     rm /tmp/live-hosts.txt
-    Live_Host=live-hosts-ip.txt
+    # Live_Host=live-hosts-ip.txt
     echo -e "${DOPE} Live Hosts Recon On $cidr_range/24 Done!"
     cat live-hosts-ip.txt
     # cat $uphostfile
@@ -181,7 +181,7 @@ Enum_Web() {
         echo -e "${DOPE} Running The Following Commands"
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-${arg[0]}-$port.log"
         echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-${arg[0]}-$rhost.txt"
-        echo -e "${DOPE} whatweb -a 3 http://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
+        echo -e "${DOPE} whatweb -v -a 3 --color=never http://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
         echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single ${arg[0]} -d $cwd/eyewitness-report-${arg[0]}"
@@ -191,7 +191,7 @@ Enum_Web() {
         gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u http://$rhost:$port -w $wordlist2 -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 161x31--12+157 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-$port-${arg[0]}.txt; exec $SHELL" &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "whatweb -a 3 http://$rhost:$port | tee whatweb-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
         echo -e "${DOPE} For a more thorough Web crawl enumeration, consider Running: "
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-dlistmedium-${arg[0]}-$port.log"
@@ -296,7 +296,7 @@ Enum_Web_SSL() {
             echo -e "${DOPE} Running The Following Commands"
             echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50 -k"
             echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-${arg[0]}.txt"
-            echo -e "${DOPE} whatweb -a 3 https://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
+            echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
             echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
             echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
@@ -304,7 +304,7 @@ Enum_Web_SSL() {
             curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-${arg[0]}.txt; exec $SHELL" &>/dev/null
-            gnome-terminal --zoom=0.9 --geometry 116x12+964+519 -- bash -c "whatweb -a 3 https://$rhost:$port | tee whatweb-ssl-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 116x12+964+519 -- bash -c "whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 120x34+18+502 -- bash -c "sslscan https://$rhost:$port | tee sslscan-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
 
