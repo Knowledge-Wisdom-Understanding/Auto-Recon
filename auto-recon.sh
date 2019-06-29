@@ -552,6 +552,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "sslscan-${arg[0]}-$port.log" -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     else
@@ -566,6 +567,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "sslscan-${arg[0]}-$port.log" -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     fi
