@@ -78,16 +78,17 @@ Open_Ports_Scan() {
     echo -e "${DOPE} Scanning $rhost"
     create_nmap_dir() {
         if [ -d nmap ]; then
-            echo "nmap directory exists"
+            :
         else
-            echo "creating nmap directory"
             mkdir -p nmap
         fi
     }
     create_nmap_dir
     # nmap -v -Pn -A -O -p- --max-retries 1 --max-rate 500 --max-scan-delay 20 -T4 -oN nmap/FullTCP $rhost
     #nmap -vv -sT -Pn -p- --disable-arp-ping -T4 -oA nmap/open-ports-$rhost $rhost
-    nmap -vv -sT -Pn --top-ports 1000 --disable-arp-ping --max-retries 1 -oA nmap/open-ports-$rhost $rhost
+    nmap -vv -sT -Pn --top-ports 1000 --disable-arp-ping --max-retries 1 -oA nmap/top-ports-$rhost $rhost
+    grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d "/" -f 1 >top-open-ports.txt
+    grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open >top-open-services.txt
 }
 
 wpid() {
@@ -154,8 +155,8 @@ whatwebpid() {
 }
 
 Enum_Web() {
-    grep -w "http" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-$rhost.txt
-    portfilename=openports-$rhost.txt
+    grep -w "http" top-open-services.txt | cut -d "/" -f 1 >httpports-$rhost.txt
+    portfilename=httpports-$rhost.txt
     # echo $portfilename
     httpPortsLines=$(cat $portfilename)
     cwd=$(pwd)
@@ -180,7 +181,7 @@ Enum_Web() {
         wordlist2="/usr/share/seclists/Discovery/Web-Content/common.txt"
         echo -e "${DOPE} Running The Following Commands"
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-${arg[0]}-$port.log"
-        echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-${arg[0]}-$rhost.txt"
+        echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-${arg[0]}-$port.txt"
         echo -e "${DOPE} whatweb -v -a 3 --color=never http://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
         echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
         echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
@@ -190,8 +191,8 @@ Enum_Web() {
         curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u http://$rhost:$port -w $wordlist2 -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 161x31--12+157 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-$port-${arg[0]}.txt; exec $SHELL" &>/dev/null
-        gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
+        gnome-terminal --zoom=0.9 --geometry 110x30+1012+499 -- bash -c "whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
         gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
         echo -e "${DOPE} For a more thorough Web crawl enumeration, consider Running: "
         echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-dlistmedium-${arg[0]}-$port.log"
@@ -262,14 +263,14 @@ Enum_Web() {
 }
 
 Web_Vulns() {
-    grep -w "http" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-$rhost.txt
+    grep -w "http" top-open-services.txt | cut -d "/" -f 1 >openports-web-$rhost.txt
     echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
-    nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
-    # nmap -Pn -sV --script=dns-brute.nse -p $(tr '\n' , <openports-$rhost.txt) -oA nmap/http-dns-script-scan $rhost
+    nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
+    # nmap -Pn -sV --script=dns-brute.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-dns-script-scan $rhost
 }
 
 Enum_Web_SSL() {
-    grep -w "https" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openportsSSL-$rhost.txt
+    grep -w "https" top-open-services.txt | cut -d "/" -f 1 >openportsSSL-$rhost.txt
     portfilenameSSL=openportsSSL-$rhost.txt
     # echo $portfilenameSSL
     httpPortsLinesSSL=$(cat $portfilenameSSL)
@@ -295,16 +296,16 @@ Enum_Web_SSL() {
             wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
             echo -e "${DOPE} Running The Following Commands"
             echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50 -k"
-            echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$port-${arg[0]}.txt"
-            echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
-            echo -e "${DOPE} curl -O https://$rhost:$port/robots.txt"
+            echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-${arg[0]}-$port.txt"
+            echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-${arg[0]}-$port.log"
+            echo -e "${DOPE} curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt"
             echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
             wafw00f https://$rhost:$port/ | tee -a wafw00f-${arg[0]}-$port.txt
             curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
-            gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-$port-${arg[0]}.txt; exec $SHELL" &>/dev/null
-            gnome-terminal --zoom=0.9 --geometry 116x12+964+519 -- bash -c "whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 110x30+1012+502 -- bash -c "whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 120x34+18+502 -- bash -c "sslscan https://$rhost:$port | tee sslscan-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
 
@@ -360,7 +361,7 @@ Enum_Web_SSL() {
 }
 
 ftp_scan() {
-    grep -w "ftp" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openportsFTP-$rhost.txt
+    grep -w "ftp" top-open-services.txt | cut -d "/" -f 1 >openportsFTP-$rhost.txt
     portfilenameFTP=openportsFTP-$rhost.txt
     # echo $portfilenameSSL
     PortsLinesFTP=$(cat $portfilenameFTP)
@@ -373,15 +374,15 @@ ftp_scan() {
 }
 
 nfs_enum() {
-    grep -w "rpcbind" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports-nfs.txt
-    if [ $(grep -i "111" openports-nfs.txt) ]; then
+    grep -w "rpcbind" top-open-services.txt | cut -d "/" -f 1 >openports-nfs.txt
+    if grep -q "111" openports-nfs.txt; then
         echo -e "${DOPE} nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost"
         nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost
     fi
 }
 
 # java_rmi_scan() {
-#     grep -i "something" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports3.txt
+#     grep -i "something" top-open-services.txt | cut -d "/" -f 1 >openports3.txt
 # }
 
 Intense_Nmap_UDP_Scan() {
@@ -390,8 +391,7 @@ Intense_Nmap_UDP_Scan() {
 }
 
 Enum_SMB() {
-    grep -i "/tcp" nmap/open-ports-$rhost.nmap | cut -d "/" -f 1 >openports2.txt
-    if [ $(grep -i "445" openports2.txt) ] || [ $(grep -i "139" openports2.txt) ]; then
+    if [[ $(grep -i "netbios-ssn" top-open-services.txt) ]] || [[ $(grep -i "microsoft-ds" top-open-services.txt) ]]; then
         echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-scan-$rhost.txt
         smbclient -L //$rhost -U "guest"% | tee -a smb-scan-$rhost.txt
 
@@ -432,11 +432,7 @@ Enum_SNMP() {
     cwd=$(pwd)
     # echo $cwd
     cd $cwd
-    npid
-    grep -i "161/udp   open" nmap/udp-$rhost.nmap | cut -d "/" -f 1 >udp-scan-$rhost.txt
-    if grep -q "161/udp   open|filtered" nmap/udp-$rhost.nmap; then
-        return 0
-    elif grep -q "161" udp-scan-$rhost.txt; then
+    if grep -q "199" top-open-ports.txt; then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
 
         echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
@@ -445,6 +441,20 @@ Enum_SNMP() {
         # echo -e "${DOPE} Running: snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-scan.log "
         snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
     fi
+    if ! grep -q "199" top-open-ports.txt; then
+        npid
+        grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan-$rhost.txt
+        if grep -q "161" udp-scan-$rhost.txt; then
+            printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
+
+            echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
+            onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
+            echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
+            # echo -e "${DOPE} Running: snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-scan.log "
+            snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
+        fi
+    fi
+
 }
 
 FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
@@ -495,8 +505,6 @@ Clean_Up() {
     wpid
     cwd=$(pwd)
     cd $cwd
-    rm openports-$rhost.txt
-    rm openports2.txt
     rm udp-scan-$rhost.txt
     rm openportsFTP-$rhost.txt
     rm openports-nfs.txt
@@ -511,6 +519,8 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'wpscan*.log' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'wordpress*.log' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     else
@@ -523,6 +533,8 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'wordpress*.*' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     fi
@@ -532,16 +544,6 @@ Clean_Up
 
 you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star() {
     cat <<"EOF"
-                         .                               '
-                         ;                         *            '
-                     - --+- -                              *        '
-                         !                           *                  *
-                         .
-             .
-             ;
-         - --+- -
-             !
-             .
                         .               *   '*
                         ;                       *
                     - --+- -                         *
@@ -562,7 +564,6 @@ you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star() {
   \  ;    )  / )                         !
    `\|   /__/ /__                        :         . :
      `\______)___)                       .       *
-
 __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫̲͡ ̲̲̲͡͡π̲̲͡͡ ̲̲͡▫̲̲͡͡ ̲|̡̡̡ ̡ ̴̡ı̴̡̡ ̡͌l̡̡̡̡.___
    *  .  . *       *    .        .        .   *    ..        .        .   *    ..
  .    *        .   ###     .      .        .            * .      .        .            *
