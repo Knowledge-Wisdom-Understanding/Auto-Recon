@@ -46,6 +46,14 @@ apt install odat -y
 cd /opt
 git clone https://github.com/quentinhardy/odat.git
 
+echo -e "${DOPE} Installing Nmap Vulners & Vulscan scripts"
+cd /usr/share/nmap/scripts/
+git clone https://github.com/vulnersCom/nmap-vulners.git
+git clone https://github.com/scipag/vulscan.git
+cd vulscan/utilities/updater
+chmod +x updateFiles.sh
+./updateFiles.sh
+
 cd /opt
 cd Auto-Recon
 chmod +x auto-recon.sh
