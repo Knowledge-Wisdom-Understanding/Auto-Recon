@@ -8,7 +8,7 @@ banner1() {
     echo -e "\e[1;94m   __/__/   /_\   \ |  |  \   __\/  _ \|  |       __/ __ \_/ ___\/  _ \|       | \e[0m"
     echo -e "\e[1;94m  |   |     ___    \|  |  /|  | (  |_| )  |    |   \  ___/\  \__(  |_| )   |   | \e[0m"
     echo -e "\e[1;94m  |___|____/\__\____|____/_|__|\_\____/|__|____|_  /\___  |\___  \____/|___|  /  \e[0m"
-    echo -e "\e[1;94m                                             \___\/  \__\/  \___\/      \___\/   \e[0mv3.2"
+    echo -e "\e[1;94m                                             \___\/  \__\/  \___\/      \___\/   \e[0mv3.3"
     echo -e "\e[1;77m\e[45m         AUTO RECON by github.com/Knowledge-Wisdom-Understanding                        \e[0m"
     echo -e ""
 
@@ -552,6 +552,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "sslscan-${arg[0]}-$port.log" -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     else
@@ -566,6 +567,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "sslscan-${arg[0]}-$port.log" -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     fi
