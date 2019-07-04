@@ -187,7 +187,7 @@ Enum_Web() {
             gnome-terminal --zoom=0.9 --geometry 161x31--12+157 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 110x30+1012+499 -- bash -c "whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
-            gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
+            # gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u http://$rhost:$port -qweds; exec $SHELL" &>/dev/null
             echo -e "${DOPE} For a more thorough Web crawl enumeration, consider Running: "
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-dlistmedium-${arg[0]}-$port.log"
 
@@ -305,7 +305,7 @@ Enum_Web_SSL() {
                 gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
                 gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
                 gnome-terminal --zoom=0.9 --geometry 110x30+1012+502 -- bash -c "whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
-                gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
+                # gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
                 gnome-terminal --zoom=0.9 --geometry 120x34+18+502 -- bash -c "sslscan https://$rhost:$port | tee sslscan-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
 
                 whatwebpid
