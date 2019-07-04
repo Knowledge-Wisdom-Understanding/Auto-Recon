@@ -410,29 +410,29 @@ Intense_Nmap_UDP_Scan() {
 
 Enum_SMB() {
     if [[ $(grep -i "netbios-ssn" top-open-services.txt) ]] || [[ $(grep -i "microsoft-ds" top-open-services.txt) ]]; then
-        echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-scan-$rhost.txt
-        smbclient -L //$rhost -U "guest"% | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-scan-$rhost.log
+        smbclient -L //$rhost -U "guest"% | tee -a smb-scan-$rhost.log
 
-        echo -e "${DOPE} Running ENUM4LINUX" | tee -a smb-scan-$rhost.txt
-        enum4linux -av $rhost | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running ENUM4LINUX" | tee -a smb-scan-$rhost.log
+        enum4linux -av $rhost | tee -a smb-scan-$rhost.log
 
-        echo -e "${DOPE} Running NMBLOOKUP" | tee -a smb-scan-$rhost.txt
-        nmblookup -A $rhost | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running NMBLOOKUP" | tee -a smb-scan-$rhost.log
+        nmblookup -A $rhost | tee -a smb-scan-$rhost.log
 
         # create an nmap directory if one doesn't exist
 
-        echo -e "${DOPE} Running All SMB nmap Vuln / Enum checks" | tee -a smb-scan-$rhost.txt
-        nmap -vv -sV -Pn -p139,445 --script smb-enum-domains.nse,smb-enum-groups.nse,smb-enum-processes.nse,smb-enum-sessions.nse,smb-enum-shares.nse,smb-enum-users.nse,smb-ls.nse,smb-mbenum.nse,smb-os-discovery.nse,smb-print-text.nse,smb-psexec.nse,smb-security-mode.nse,smb-server-stats.nse,smb-system-info.nse,smb-vuln-conficker.nse,smb-vuln-cve2009-3103.nse,smb-vuln-ms06-025.nse,smb-vuln-ms07-029.nse,smb-vuln-ms08-067.nse,smb-vuln-ms10-054.nse,smb-vuln-ms10-061.nse,smb-vuln-ms17-010.nse --script-args=unsafe=1 -oA nmap/smbvulns-$rhost $rhost | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running All SMB nmap Vuln / Enum checks" | tee -a smb-scan-$rhost.log
+        nmap -vv -sV -Pn -p139,445 --script smb-enum-domains.nse,smb-enum-groups.nse,smb-enum-processes.nse,smb-enum-sessions.nse,smb-enum-shares.nse,smb-enum-users.nse,smb-ls.nse,smb-mbenum.nse,smb-os-discovery.nse,smb-print-text.nse,smb-psexec.nse,smb-security-mode.nse,smb-server-stats.nse,smb-system-info.nse,smb-vuln-conficker.nse,smb-vuln-cve2009-3103.nse,smb-vuln-ms06-025.nse,smb-vuln-ms07-029.nse,smb-vuln-ms08-067.nse,smb-vuln-ms10-054.nse,smb-vuln-ms10-061.nse,smb-vuln-ms17-010.nse --script-args=unsafe=1 -oA nmap/smbvulns-$rhost $rhost | tee -a smb-scan-$rhost.log
 
-        echo -e "${DOPE} Running NBTSCAN" | tee -a smb-scan-$rhost.txt
-        nbtscan -rvh $rhost | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running NBTSCAN" | tee -a smb-scan-$rhost.log
+        nbtscan -rvh $rhost | tee -a smb-scan-$rhost.log
 
-        echo -e "${DOPE} Running smbmap" | tee -a smb-scan-$rhost.txt
-        smbmap -H $rhost | tee -a smb-scan-$rhost.txt
-        smbmap -u null -p "" -H $rhost | tee -a smb-scan-$rhost.txt
-        smbmap -u null -p "" -H $rhost -R | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} Running smbmap" | tee -a smb-scan-$rhost.log
+        smbmap -H $rhost | tee -a smb-scan-$rhost.log
+        smbmap -u null -p "" -H $rhost | tee -a smb-scan-$rhost.log
+        smbmap -u null -p "" -H $rhost -R | tee -a smb-scan-$rhost.log
 
-        echo -e "${DOPE} All checks completed Successfully" | tee -a smb-scan-$rhost.txt
+        echo -e "${DOPE} All checks completed Successfully" | tee -a smb-scan-$rhost.log
     fi
 }
 
@@ -555,6 +555,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "sslscan-${arg[0]}-$port.log" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "smb-scan-$rhost.log" -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     else
@@ -571,6 +572,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "sslscan-${arg[0]}-$port.log" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "smb-scan-$rhost.log" -exec mv {} $cwd/$rhost-report/ \;
         mv live-hosts-ip.txt $rhost-report &>/dev/null
         cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
     fi
