@@ -25,3 +25,4 @@ xwininfo -id $(xprop -root | awk '/_NET_ACTIVE_WINDOW\(WINDOW\)/{print $NF}')
 The -geometry will be at the bottom. Then proceed to edit auto-recon.sh as needed. Currently new terminal windows open up at a zoom-level 
 of 0.9
 If you notice a bug or have a feature request. Please submit an issue. Thanks!
+Also, gobuster is now using the version 3 syntax, if gobuster fails, you need to upgrade gobuster with apt or from source
