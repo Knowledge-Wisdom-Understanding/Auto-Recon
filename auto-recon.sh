@@ -178,7 +178,7 @@ Enum_Web() {
             echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-${arg[0]}-$port.txt"
             echo -e "${DOPE} whatweb -v -a 3 --color=never http://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
             echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
-            echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
+            # echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
             echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single ${arg[0]} -d $cwd/eyewitness-report-${arg[0]}"
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f http://$rhost:$port/"
             wafw00f http://$rhost:$port/ | tee -a wafw00f-${arg[0]}-$port.log
@@ -298,7 +298,7 @@ Enum_Web_SSL() {
                 echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-${arg[0]}-$port.txt"
                 echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-${arg[0]}-$port.log"
                 echo -e "${DOPE} curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt"
-                echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
+                # echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
                 echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
                 wafw00f https://$rhost:$port/ | tee -a wafw00f-${arg[0]}-$port.log
                 curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt &>/dev/null
