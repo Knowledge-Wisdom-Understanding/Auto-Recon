@@ -171,18 +171,19 @@ Enum_Web() {
         fi
         for port in $httpPortsLines; do
             wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-            wordlist2="/usr/share/seclists/Discovery/Web-Content/common.txt"
+            # wordlist2="/usr/share/seclists/Discovery/Web-Content/common.txt"
             echo -e "${DOPE} Running The Following Commands"
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-${arg[0]}-$port.log"
+            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-${arg[0]}-$port.txt"
             echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-${arg[0]}-$port.txt"
             echo -e "${DOPE} whatweb -v -a 3 --color=never http://$rhost:$port/ | tee whatweb-${arg[0]}:$port.log"
             echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
             echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
             echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single ${arg[0]} -d $cwd/eyewitness-report-${arg[0]}"
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f http://$rhost:$port/"
-            wafw00f http://$rhost:$port/ | tee -a wafw00f-${arg[0]}-$port.txt
+            wafw00f http://$rhost:$port/ | tee -a wafw00f-${arg[0]}-$port.log
             curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt &>/dev/null
-            gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u http://$rhost:$port -w $wordlist2 -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50; exec $SHELL" &>/dev/null
+            gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 161x31--12+157 -- bash -c "python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host http://$rhost:$port -output niktoscan-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
             gnome-terminal --zoom=0.9 --geometry 110x30+1012+499 -- bash -c "whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
@@ -291,20 +292,20 @@ Enum_Web_SSL() {
                 :
             fi
             for port in $httpPortsLinesSSL; do
-                wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
+                wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
                 echo -e "${DOPE} Running The Following Commands"
-                echo -e "${DOPE} gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50 -k"
+                echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-${arg[0]}-$port.txt"
                 echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-${arg[0]}-$port.txt"
                 echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-${arg[0]}-$port.log"
                 echo -e "${DOPE} curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt"
                 echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
                 echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
-                wafw00f https://$rhost:$port/ | tee -a wafw00f-${arg[0]}-$port.txt
+                wafw00f https://$rhost:$port/ | tee -a wafw00f-${arg[0]}-$port.log
                 curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-${arg[0]}-$port.txt &>/dev/null
-                gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster -e -u https://$rhost:$port -w $wordlist -s '200,204,301,302,307,403' -o gobuster-${arg[0]}-$port.txt -t 50 -k; exec $SHELL" &>/dev/null
+                gnome-terminal --zoom=0.9 --geometry 161x33--12--13 -- bash -c "gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
                 gnome-terminal --zoom=0.9 --geometry 268x31+18+16 -- bash -c "nikto -ask=no -host https://$rhost:$port -output niktoscan-${arg[0]}-$port.txt; exec $SHELL" &>/dev/null
                 gnome-terminal --zoom=0.9 --geometry 110x30+1012+502 -- bash -c "whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
-                gnome-terminal --zoom=0.9 --geometry 268x9+16+540 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
+                gnome-terminal --zoom=0.9 --geometry 105x31+1157+19 -- bash -c "uniscan -u https://$rhost:$port -qweds; exec $SHELL" &>/dev/null
                 gnome-terminal --zoom=0.9 --geometry 120x34+18+502 -- bash -c "sslscan https://$rhost:$port | tee sslscan-${arg[0]}-$port.log; exec $SHELL" &>/dev/null
 
                 whatwebpid
@@ -504,8 +505,8 @@ vulnscan
 Enum_Oracle() {
     cwd=$(pwd)
     cd $cwd
-    grep -w "1521/tcp open" nmap/full-tcp-scan-$rhost.nmap | cut -d "/" -f 1 >allopenports-$rhost.txt
-    if (grep -i "1521" allopenports-$rhost.txt); then
+    # grep -w "1521/tcp open" nmap/full-tcp-scan-$rhost.nmap | cut -d "/" -f 1 >allopenports-$rhost.txt
+    if grep -q "1521" allopenports2-$rhost.txt; then
         echo -e "${DOPE} Found Oracle! Running NMAP Enumeration"
         nmap -sV -p 1521 --script oracle-enum-users.nse,oracle-sid-brute.nse,oracle-tns-version.nse -oA nmap/oracle-$rhost $rhost
         echo -e "${DOPE} Found Oracle! Running tnscmd10g Enumeration"
@@ -521,9 +522,9 @@ Enum_Oracle() {
         ./odat.py sidguesser -s $rhost -p 1521
         ./odat.py passwordguesser -s $rhost -p 1521 -d XE --accounts-file accounts/accounts-multiple.txt
         cd - &>/dev/null
-        rm allopenports-$rhost.txt
+        rm allopenports2-$rhost.txt
     else
-        rm allopenports-$rhost.txt
+        rm allopenports2-$rhost.txt
     fi
 
 }
@@ -539,11 +540,12 @@ Clean_Up() {
     rm openportsFTP-$rhost.txt
     rm openports-nfs.txt
     rm openportsSSL-$rhost.txt
-    rm allopenports2-$rhost.txt
+    # rm allopenports2-$rhost.txt
     mkdir -p wordlists &>/dev/null
     find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/ \;
@@ -558,6 +560,7 @@ Clean_Up() {
     else
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/ \;
