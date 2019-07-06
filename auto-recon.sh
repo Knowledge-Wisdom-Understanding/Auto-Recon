@@ -91,7 +91,6 @@ Open_Ports_Scan() {
     }
     create_nmap_dir
     # nmap -v -Pn -A -O -p- --max-retries 1 --max-rate 500 --max-scan-delay 20 -T4 -oN nmap/FullTCP $rhost
-    #nmap -vv -sT -Pn -p- --disable-arp-ping -T4 -oA nmap/open-ports-$rhost $rhost
     nmap -vv -sT -sV -Pn --top-ports 10000 --disable-arp-ping --max-retries 1 --max-rate 500 --max-scan-delay 20 -T4 -oA nmap/top-ports-$rhost $rhost
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d "/" -f 1 >top-open-ports.txt
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open >top-open-services.txt
