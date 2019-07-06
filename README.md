@@ -20,4 +20,4 @@ chmod +x setup.sh
 ./auto-recon.sh -H [--HTB] RHOST
 ```
 If you notice a bug or have a feature request. Please submit an issue. Thanks!
-Also, gobuster is now using the version 3 syntax, if gobuster fails, upgrade to the latest version!
+Gobuster is now using version 3 syntax, upgrade to the latest version!
