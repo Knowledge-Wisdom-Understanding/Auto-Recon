@@ -185,7 +185,7 @@ Enum_Web() {
             whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-$rhost-$port.log
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f http://$rhost:$port/"
             wafw00f http://$rhost:$port/ | tee wafw00f-$rhost-$port.log
-            echo -e "${DOPE} curl -O http://$rhost:$port/robots.txt"
+            echo -e "${DOPE} curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null"
             curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
             # gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null
             echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-$rhost-$port.txt"
