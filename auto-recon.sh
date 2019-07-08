@@ -164,7 +164,7 @@ Enum_Web() {
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
-            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null"
+            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt"
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
             if [ "$wp1" -o "$wp2" ]; then
