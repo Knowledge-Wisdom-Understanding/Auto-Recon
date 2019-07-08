@@ -118,9 +118,25 @@ Enum_Web() {
             fi
             unset rhost
             rhost=$redirect_domain
+        elif grep -q "Service Info" nmap/http-vuln-enum-scan.nmap; then
+            grep -i "Service Info" nmap/http-vuln-enum-scan.nmap | awk '{print $4}' >hostname.txt
+            if [[ -s hostname.txt ]]; then
+                hostdomainname=$(grep -i "Service Info" nmap/http-vuln-enum-scan.nmap | awk '{print $4}')
+                echo -e "${DOPE} Target domain name is: $hostdomainname"
+                echo -e "${DOPE} Adding $hostdomainname to /etc/hosts file"
+                cat /etc/hosts >etc-hosts-backup3.txt
+                if grep -q "$rhost" /etc/hosts; then
+                    :
+                else
+                    sed -i "3i$rhost  $hostdomainname" /etc/hosts
+                fi
+                unset rhost
+                rhost=$hostdomainname
+            fi
         else
             :
         fi
+
         for port in $httpPortsLines; do
             wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
             # wordlist2="/usr/share/seclists/Discovery/Web-Content/common.txt"
@@ -143,7 +159,7 @@ Enum_Web() {
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             ##################################################################################
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log"
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
@@ -512,14 +528,11 @@ Clean_Up() {
     cwd=$(pwd)
     cd $cwd
     rm udp-scan-$rhost.txt
+    rm openports-nfs.txt
     if [[ -e openportsFTP-$rhost.txt ]]; then
         rm openportsFTP-$rhost.txt
-    elif [[ -e openports-nfs.txt ]]; then
-        rm openports-nfs.txt
     elif [[ -e openportsSSL-$rhost.txt ]]; then
         rm openportsSSL-$rhost.txt
-    elif [[ -e openports-nfs.txt ]]; then
-        rm openports-nfs.txt
     else
         :
     fi
