@@ -91,64 +91,11 @@ Open_Ports_Scan() {
     }
     create_nmap_dir
     # nmap -v -Pn -A -O -p- --max-retries 1 --max-rate 500 --max-scan-delay 20 -T4 -oN nmap/FullTCP $rhost
-    nmap -vv -sT -sV -Pn --top-ports 10000 --disable-arp-ping --max-retries 1 --max-rate 500 --max-scan-delay 20 -T4 -oA nmap/top-ports-$rhost $rhost
+    #nmap -vv -sT -Pn -p- --disable-arp-ping -T4 -oA nmap/open-ports-$rhost $rhost
+    nmap -vv -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/top-ports-$rhost $rhost
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d "/" -f 1 >top-open-ports.txt
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open >top-open-services.txt
     # grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d " " -f 1 | cut -d "/" -f 1 | tr "\n" "," | head -c-1 >nmap-top-open-ports.txt
-}
-
-wpid() {
-    wpscan_process_id() {
-        getwpid=$(ps -elf | grep wpscan | grep -v grep | awk '{print $4}')
-        wprocid=$(echo $getwpid)
-        wpscanid=$(expr "$wprocid" : '.* \(.*\)')
-    }
-
-    wpscan_process_id
-    if [ $? -eq 0 ]; then
-        printf "\e[36m[+]\e[0m Waiting for WPSCAN PID $wpscanid Scan To Finish up \e[0m\n"
-        echo -e "${YELLOW}#################################################################################################### ${END}"
-        # echo "waiting for PID $procid to finish running NMAP script"
-        while ps -p $wpscanid >/dev/null; do sleep 1; done
-    else
-        :
-    fi
-}
-
-npid() {
-    nmap_process_id() {
-        getpid=$(ps -elf | grep nmap | grep -v grep | awk '{print $4}')
-        procid=$(echo $getpid)
-        nmapid=$(expr "$procid" : '.* \(.*\)')
-    }
-
-    nmap_process_id
-    if [ $? -eq 0 ]; then
-        printf "\e[36m[+] Waiting for NMAP PID $nmapid Scan To Finish up \e[0m\n"
-        echo -e "${YELLOW}#################################################################################################### ${END}"
-        # echo "waiting for PID $procid to finish running NMAP script"
-        while ps -p $nmapid >/dev/null; do sleep 1; done
-    else
-        :
-    fi
-}
-
-whatwebpid() {
-    ww_process_id() {
-        wwgetpid=$(ps -elf | grep whatweb | grep -v grep | awk '{print $4}')
-        wwprocid=$(echo $wwgetpid)
-        whatwebid=$(expr "$wwprocid" : '.* \(.*\)')
-    }
-
-    ww_process_id
-    if [ $? -eq 0 ]; then
-        printf "\e[36m[+]\e[0m Waiting for WHATWEB PID $whatwebid Scan To Finish up \e[0m\n"
-        echo -e "${YELLOW}#################################################################################################### ${END}"
-        # echo "waiting for PID $procid to finish running NMAP script"
-        while ps -p $whatwebid >/dev/null; do sleep 1; done
-    else
-        :
-    fi
 }
 
 Enum_Web() {
@@ -190,10 +137,10 @@ Enum_Web() {
             echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-$rhost-$port.txt"
             nikto -ask=no -host http://$rhost:$port -output niktoscan-$rhost-$port.txt
             ####################################################################################
-            mkdir -p eyewitness-report-"$rhost" && cd /opt/EyeWitness
-            echo http://"$rhost":"$port" >>eyefile.txt
-            echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost"
-            ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost
+            mkdir -p eyewitness-report-"$rhost"-"$port" && cd /opt/EyeWitness
+            echo http://"$rhost":"$port" >eyefile.txt
+            echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port"
+            ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             ##################################################################################
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log"
@@ -202,18 +149,13 @@ Enum_Web() {
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
             echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null"
-            # echo "$cwd"
-            whatwebpid
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
-            # wp3=$(grep -i "wp-content" gobuster-$rhost-$port.txt)
             if [ "$wp1" -o "$wp2" ]; then
                 echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
                 wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan-$rhost-$port.log
-                # wait for wpscan to finish up calling the wpid function. Don't Repeat Yourself!
                 # echo -e "${DOPE} 1 sleeping for 5 seconds to wait for wpscan process id :)"
-                sleep 5
-                wpid
+                sleep 2
                 if [[ -n $(grep -i "User(s) Identified" wpscan-$rhost-$port.log) ]]; then
                     grep -w -A 100 "User(s)" wpscan-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users.txt
                     # create wordlist from web-page with cewl
@@ -227,7 +169,6 @@ Enum_Web() {
                     wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute.txt
                     # echo -e "${DOPE} 2 sleeping for 5 seconds to wait for wpscan process id :)"
                     sleep 5
-                    wpid
                     if grep -i "No Valid Passwords Found" wordpress-cewl-brute.txt 2>/dev/null; then
                         if [ -s john-cool-list.txt ]; then
                             wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P john-cool-list.txt threads 50 | tee wordpress-john-cewl-brute.txt
@@ -236,7 +177,6 @@ Enum_Web() {
                         fi
                     fi
                     sleep 5
-                    wpid
                     if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute.txt 2>/dev/null; then
                         wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute.txt
                     fi
@@ -274,110 +214,140 @@ Web_Vulns() {
     if [[ -s openports-web-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
         nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
-        # cwd=$(pwd)
-        # echo -e "http://$rhost:$port" >>eyefile.txt
-        # mkdir -p eyewitness-report-"$rhost" && cd /opt/EyeWitness
-        # echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost"
-        # ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web --single $rhost -d $cwd/eyewitness-report-$rhost
-        # cd - &>/dev/null
-    # nmap -Pn -sV --script=dns-brute.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-dns-script-scan $rhost
+    fi
+}
+
+dns_enum() {
+    cwd=$(pwd)
+    cat sslscan-$rhost-$port.log | grep "Subject" | awk '{print $2}' >domain.txt
+    domainName=$(grep "Subject" sslscan-$rhost-$port.log | awk '{print $2}')
+    # echo "$domainName"
+    if [[ -s domain.txt ]] && [[ -n $domainName ]]; then
+        set -- $domainName
+        echo -e "${DOPE} Target has $domainName"
+        echo -e "${DOPE} Creating backup of /etc/hosts file in $cwd"
+        cat /etc/hosts >etc-hosts-backup2.txt
+        if grep -q "$rhost  $domainName" /etc/hosts; then
+            :
+        else
+            echo -e "${DOPE} Adding $domainName to /etc/hosts file"
+            sed -i "3i$rhost  $domainName" /etc/hosts
+        fi
+        echo -e "${DOPE} Checking for Zone Transfer on $rhost:$port $domainName"
+        dig axfr @$rhost $domainName | tee zone-transfer-$rhost-$port-$domainName.txt
+        if grep -q "$domainName" zone-transfer-$rhost-$port-$domainName.txt; then
+            grep -v ";" zone-transfer-$rhost-$port-$domainName.txt | grep -v -e '^[[:space:]]*$' >filtered-zone-transfer-$rhost-$port-$domainName.txt
+            allDomains=$(cat filtered-zone-transfer-$rhost-$port-$domainName.txt | awk '{print $1}')
+            domainDot=$(echo $domainName".")
+            for dmain in $allDomains; do
+                if [[ $domainDot == "$dmain" ]]; then
+                    :
+                else
+                    dmainMinusDot=$(echo "${dmain:0:-1}")
+                    sed -i "/$domainName/ s/$/ $dmainMinusDot/" /etc/hosts
+                fi
+            done
+            cat /etc/hosts
+
+        fi
+        echo -e "${DOPE} Running DNSRECON!"
+        dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log
+        echo -e "${DOPE} Running Sublist3r"
+        reconDir=$(echo $cwd)
+        echo -e "${DOPE} Running python3 sublist3r.py -d $domainName -o $reconDir/subdomains-$rhost-$port-$domainName.log"
+        cd /opt/Sublist3r && python3 sublist3r.py -d $domainName -o $reconDir/subdomains-$rhost-$port-$domainName.log
+        cd - &>/dev/null
+    fi
+    if [[ -n "$domainName" ]]; then
+        unset rhost
+        rhost=$domainName
+    else
+        :
     fi
 }
 
 Enum_Web_SSL() {
-    grep -w "https" top-open-services.txt | cut -d "/" -f 1 >openportsSSL-$rhost.txt
+    grep -E 'https|ssl/http' top-open-services.txt | cut -d "/" -f 1 >openportsSSL-$rhost.txt
     if [[ -s openportsSSL-$rhost.txt ]]; then
         portfilenameSSL=openportsSSL-$rhost.txt
         # echo $portfilenameSSL
         httpPortsLinesSSL=$(cat $portfilenameSSL)
-        if [[ -s openportsSSL-$rhost.txt ]]; then
-            cwd=$(pwd)
-            if grep -q "|_http-title: Did not follow redirect" nmap/http-vuln-enum-scan.nmap; then
-                redirect_domain=$(grep -i "|_http-title: Did not follow redirect" nmap/http-vuln-enum-scan.nmap | cut -d " " -f 7 | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/")
-                echo -e "${DOPE} Target is redirecting to domain: $redirect_domain"
-                echo -e "${DOPE} Creating backup of /etc/hosts file in $cwd"
-                cat /etc/hosts >etc-hosts-backup
-                echo -e "${DOPE} Adding $redirect_domain to /etc/hosts file"
-                if grep -q "$rhost" /etc/hosts; then
-                    :
-                else
-                    sed -i "3i$rhost  $redirect_domain" /etc/hosts
+        cwd=$(pwd)
+        for port in $httpPortsLinesSSL; do
+            set -- $port
+            wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
+            wordlist2="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
+            echo -e "${DOPE} Running The Following Commands"
+            echo -e "${DOPE} sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log"
+            sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log
+            dns_enum
+            echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-$rhost-$port.log"
+            whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-$rhost-$port.log
+            echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
+            wafw00f https://$rhost:$port/ | tee wafw00f-$rhost-$port.log
+            echo -e "${DOPE} curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt"
+            curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
+            ############## EYE-WITNESS ##########################################
+            mkdir -p eyewitness-report-"$rhost"-"$port" && cd /opt/EyeWitness
+            echo https://"$rhost":"$port" >eyefile.txt
+            echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port"
+            ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
+            cd - &>/dev/null
+            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
+            gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null
+            echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$rhost-$port.txt"
+            nikto -ask=no -host https://$rhost:$port -output niktoscan-$rhost-$port.txt
+            # uniscan -u https://$rhost:$port -qweds
+            echo -e "${DOPE} Further Web enumeration Commands to Run: "
+            echo -e "${DOPE} uniscan -u https://$rhost:$port -qweds"
+            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist2 -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
+
+            if [ $(grep -i "WordPress" whatweb-ssl-$rhost-$port.log 2>/dev/null) ]; then
+                echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log"
+                wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log
+                sleep 5
+                if [[ -n $(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
+                    grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
+                    # create wordlist from web-page with cewl
+                    cewl https://$rhost:$port/ -m 3 -w cewl-list2.txt
+                    sleep 10
+                    # add john rules to cewl wordlist
+                    echo -e "${DOPE} Adding John Rules to Cewl Wordlist!"
+                    john --rules --wordlist=cewl-list2.txt --stdout >john-cool-list2.txt
+                    sleep 3
+                    # brute force again with wpscan
+                    wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
+                    sleep 5
+                    if grep -i "No Valid Passwords Found" wordpress-cewl-brute2.txt; then
+                        if [ -s john-cool-list2.txt ]; then
+                            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
+                        else
+                            echo "John wordlist is empty :("
+                        fi
+                        # if password not found then run it again with fasttrack.txt
+                        sleep 5
+                        if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute2.txt; then
+                            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
+                        fi
+                    fi
                 fi
-                unset rhost
-                rhost=$redirect_domain
+            elif grep -i "Drupal" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
+                echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee drupalscan-$rhost-$port.log"
+                droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
+            elif grep -i "Joomla" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
+                echo -e "${DOPE} Found Joomla! Running joomscan --url https://$rhost/ -ec | tee joomlascan-$rhost-$port.log"
+                joomscan --url https://$rhost:$port/ -ec | tee -a joomlascan-$rhost-$port.log
+            elif grep -i "WebDAV" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
+                echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url https://$rhost:$port/ | tee davtestscan-$rhost-$port.log"
+                davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log
             else
                 :
             fi
-            for port in $httpPortsLinesSSL; do
-                wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
-                wordlist2="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
-                echo -e "${DOPE} Running The Following Commands"
-                # echo -e "${DOPE} uniscan -u https://$rhost:$port/ -qweds"
-                echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-$rhost-$port.log"
-                whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-$rhost-$port.log
-                echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
-                wafw00f https://$rhost:$port/ | tee wafw00f-$rhost-$port.log
-                echo -e "${DOPE} curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt"
-                curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
-                echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
-                gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null
-                echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$rhost-$port.txt"
-                nikto -ask=no -host https://$rhost:$port -output niktoscan-$rhost-$port.txt
-                # uniscan -u https://$rhost:$port -qweds
-                echo -e "${DOPE} sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log"
-                sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log
-                echo -e "${DOPE} Further Web enumeration Commands to Run: "
-                echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
-                echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist2 -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
-
-                whatwebpid
-                if [ $(grep -i "WordPress" whatweb-ssl-$rhost-$port.log 2>/dev/null) ]; then
-                    echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log"
-                    wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log
-                    sleep 5
-                    wpid
-                    if [[ -n $(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
-                        grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
-                        # create wordlist from web-page with cewl
-                        cewl https://$rhost:$port/ -m 3 -w cewl-list2.txt
-                        sleep 10
-                        # add john rules to cewl wordlist
-                        echo -e "${DOPE} Adding John Rules to Cewl Wordlist!"
-                        john --rules --wordlist=cewl-list2.txt --stdout >john-cool-list2.txt
-                        sleep 3
-                        # brute force again with wpscan
-                        wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
-                        sleep 5
-                        wpid
-                        if grep -i "No Valid Passwords Found" wordpress-cewl-brute2.txt; then
-                            if [ -s john-cool-list2.txt ]; then
-                                wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
-                            else
-                                echo "John wordlist is empty :("
-                            fi
-                            # if password not found then run it again with fasttrack.txt
-                            sleep 5
-                            wpid
-                            if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute2.txt; then
-                                wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
-                            fi
-                        fi
-                    fi
-                elif grep -i "Drupal" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
-                    echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee drupalscan-$rhost-$port.log"
-                    droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
-                elif grep -i "Joomla" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
-                    echo -e "${DOPE} Found Joomla! Running joomscan --url https://$rhost/ -ec | tee joomlascan-$rhost-$port.log"
-                    joomscan --url https://$rhost:$port/ -ec | tee -a joomlascan-$rhost-$port.log
-                elif grep -i "WebDAV" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
-                    echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url https://$rhost:$port/ | tee davtestscan-$rhost-$port.log"
-                    davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log
-                else
-                    :
-                fi
-            done
-        fi
+        done
         if [[ -n $redirect_domain ]]; then
+            unset rhost
+            rhost=${arg[1]}
+        elif [[ -n $domainName ]]; then
             unset rhost
             rhost=${arg[1]}
         else
@@ -394,7 +364,7 @@ ftp_scan() {
     if [[ -s openportsFTP-$rhost.txt ]]; then
         for ftp_port in $PortsLinesFTP; do
             echo -e "${DOPE} Running nmap ftp script scan on port: $ftp_port"
-            nmap -sV -Pn -p $ftp_port --script=ftp-anon,ftp-bounce,ftp-libopie,ftp-proftpd-backdoor,ftp-vsftpd-backdoor,ftp-vuln-cve2010-4221 -v -oA nmap/ftp-enum $rhost
+            nmap -sV -Pn -p $ftp_port --script=ftp-anon,ftp-bounce,ftp-libopie,ftp-proftpd-backdoor,ftp-vsftpd-backdoor,ftp-vuln-cve2010-4221,ftp-syst -v -oA nmap/ftp-enum $rhost
         done
     fi
 }
@@ -492,8 +462,7 @@ Enum_SNMP() {
 FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     cwd=$(pwd)
     echo -e "${DOPE} Running Full Nmap TCP port Scan For Good Measuere, just in case we missed one ;)"
-    # nmap -vv -Pn -A -O -script-args=unsafe=1 -sS -p 1521 -T4 -oA nmap/full-tcp-scan-$rhost $rhost
-    nmap -vv -Pn -A -O -script-args=unsafe=1 -sS -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost
+    nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost
     echo -e "${YELLOW}#################################################################################################### ${END}"
     echo -e "${TEAL}########################### Checking Vulnerabilities  ############################################## ${END}"
     echo -e "${YELLOW}#################################################################################################### ${END}"
@@ -540,13 +509,18 @@ Enum_Oracle() {
 
 Clean_Up() {
     sleep 3
-    wpid
     cwd=$(pwd)
     cd $cwd
     rm udp-scan-$rhost.txt
-    rm openportsFTP-$rhost.txt
-    rm openports-nfs.txt
-    rm openportsSSL-$rhost.txt
+    if [[ -e openportsFTP-$rhost.txt ]]; then
+        rm openportsFTP-$rhost.txt
+    elif [[ -e openports-nfs.txt ]]; then
+        rm openports-nfs.txt
+    elif [[ -e openportsSSL-$rhost.txt ]]; then
+        rm openportsSSL-$rhost.txt
+    else
+        :
+    fi
     # rm allopenports2-$rhost.txt
     mkdir -p wordlists &>/dev/null
     find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
@@ -562,8 +536,13 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "sslscan-$rhost-$port.log" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "domain.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "etc-hosts-backup2.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "smb-scan-$rhost.log" -exec mv {} $cwd/$rhost-report/ \;
-        cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
+        find $cwd/ -maxdepth 1 -name "*$rhost*.log" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "niktoscan*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/ \;
     else
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
@@ -578,12 +557,16 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name 'top-open-ports.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'top-open-services.txt' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "sslscan-$rhost-$port.log" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "domain.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "etc-hosts-backup2.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "smb-scan-$rhost.log" -exec mv {} $cwd/$rhost-report/ \;
-        cp -r eyewitness-report-$rhost $rhost-report &>/dev/null && rm -rf eyewitness-report-$rhost
+        find $cwd/ -maxdepth 1 -name "*$rhost*.log" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "niktoscan*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/ \;
     fi
 
 }
-# Clean_Up
 
 Remaining_Hosts_All_Scans() {
     echo -e "$rhost is the current RHOST!"
@@ -750,7 +733,8 @@ while [[ $# -gt 0 ]]; do
         you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star 0
         ;;
     -H | --HTB)
-        shift rhost="$1"
+        shift
+        rhost="$1"
         Open_Ports_Scan 0
         Web_Vulns 0
         Enum_Web 0
