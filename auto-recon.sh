@@ -528,18 +528,15 @@ Clean_Up() {
     sleep 3
     cwd=$(pwd)
     cd $cwd
-    rm udp-scan-$rhost.txt
-    rm openports-nfs.txt
-    if [[ -e openportsFTP-$rhost.txt ]]; then
-        rm openportsFTP-$rhost.txt
-    elif [[ -e openportsSSL-$rhost.txt ]]; then
-        rm openportsSSL-$rhost.txt
-    else
-        :
-    fi
+    rm udp-scan-$rhost.txt 2>/dev/null
+    rm openports-nfs.txt 2>/dev/null
+    rm openportsFTP-$rhost.txt 2>/dev/null
+    rm openportsSSL-$rhost.txt 2>/dev/null
     # rm allopenports2-$rhost.txt
-    mkdir -p wordlists &>/dev/null
-    find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
+    if [[ -s cewl-list.txt ]]; then
+        mkdir -p wordlists &>/dev/null
+        find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
+    fi
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
