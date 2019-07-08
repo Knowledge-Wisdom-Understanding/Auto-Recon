@@ -455,7 +455,6 @@ Enum_SNMP() {
     cd $cwd
     if grep -q "199" top-open-ports.txt; then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
-
         echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
         onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
         echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
@@ -463,7 +462,6 @@ Enum_SNMP() {
         snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
     fi
     if ! grep -q "199" top-open-ports.txt; then
-        npid
         grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan-$rhost.txt
         if grep -q "161" udp-scan-$rhost.txt; then
             printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
