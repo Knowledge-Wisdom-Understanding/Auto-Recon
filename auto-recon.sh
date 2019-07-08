@@ -518,6 +518,8 @@ Clean_Up() {
         rm openports-nfs.txt
     elif [[ -e openportsSSL-$rhost.txt ]]; then
         rm openportsSSL-$rhost.txt
+    elif [[ -e openports-nfs.txt ]]; then
+        rm openports-nfs.txt
     else
         :
     fi
