@@ -219,6 +219,9 @@ Enum_Web() {
         if [[ -n $redirect_domain ]]; then
             unset rhost
             rhost=${arg[1]}
+        elif [[ -n $hostdomainname ]]; then
+            unset rhost
+            rhost=${arg[1]}
         else
             :
         fi
