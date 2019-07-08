@@ -54,6 +54,10 @@ cd vulscan/utilities/updater
 chmod +x updateFiles.sh
 ./updateFiles.sh
 
+echo -e "${DOPE} Installing Sublist3r"
+cd /opt
+git clone https://github.com/aboul3la/Sublist3r.git
+
 cd /opt
 cd Auto-Recon
 chmod +x auto-recon.sh
