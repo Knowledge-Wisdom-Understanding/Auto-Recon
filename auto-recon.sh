@@ -99,7 +99,7 @@ Open_Ports_Scan() {
 }
 
 Enum_Web() {
-    grep -w "http" top-open-services.txt | cut -d "/" -f 1 >httpports-$rhost.txt
+    grep -v "ssl" top-open-services.txt | grep -w "http" | cut -d "/" -f 1 >httpports-$rhost.txt
     if [[ -s httpports-$rhost.txt ]]; then
         portfilename=httpports-$rhost.txt
         # echo $portfilename
@@ -118,25 +118,9 @@ Enum_Web() {
             fi
             unset rhost
             rhost=$redirect_domain
-        elif grep -q "Service Info" nmap/http-vuln-enum-scan.nmap; then
-            grep -i "Service Info" nmap/http-vuln-enum-scan.nmap | awk '{print $4}' >hostname.txt
-            if [[ -s hostname.txt ]]; then
-                hostdomainname=$(grep -i "Service Info" nmap/http-vuln-enum-scan.nmap | awk '{print $4}')
-                echo -e "${DOPE} Target domain name is: $hostdomainname"
-                echo -e "${DOPE} Adding $hostdomainname to /etc/hosts file"
-                cat /etc/hosts >etc-hosts-backup3.txt
-                if grep -q "$rhost" /etc/hosts; then
-                    :
-                else
-                    sed -i "3i$rhost  $hostdomainname" /etc/hosts
-                fi
-                unset rhost
-                rhost=$hostdomainname
-            fi
         else
             :
         fi
-
         for port in $httpPortsLines; do
             wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
             # wordlist2="/usr/share/seclists/Discovery/Web-Content/common.txt"
@@ -159,12 +143,12 @@ Enum_Web() {
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             ##################################################################################
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log"
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
-            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt"
+            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null"
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
             if [ "$wp1" -o "$wp2" ]; then
@@ -219,9 +203,6 @@ Enum_Web() {
         if [[ -n $redirect_domain ]]; then
             unset rhost
             rhost=${arg[1]}
-        elif [[ -n $hostdomainname ]]; then
-            unset rhost
-            rhost=${arg[1]}
         else
             :
         fi
@@ -240,7 +221,17 @@ dns_enum() {
     cwd=$(pwd)
     cat sslscan-$rhost-$port.log | grep "Subject" | awk '{print $2}' >domain.txt
     domainName=$(grep "Subject" sslscan-$rhost-$port.log | awk '{print $2}')
-    # echo "$domainName"
+    wildcards=('*' '?' '|')
+    for wildcard in "${wildcards[@]}"; do
+        if [[ $domainName == *"${wildcard}"* ]]; then
+            domainNoWildcard=$(echo "${domainName#'*.'}")
+            echo -e "${DOPE} Removing wildcard from $domainName .. Setting domain to $domainNoWildcard"
+            unset domainName
+            domainName="$domainNoWildcard"
+        else
+            :
+        fi
+    done
     if [[ -s domain.txt ]] && [[ -n $domainName ]]; then
         set -- $domainName
         echo -e "${DOPE} Target has $domainName"
@@ -315,7 +306,7 @@ Enum_Web_SSL() {
             echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt"
             gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt
             echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$rhost-$port.txt"
-            nikto -ask=no -host https://$rhost:$port -output niktoscan-$rhost-$port.txt
+            nikto -ask=no -host https://$rhost:$port -ssl -output niktoscan-$rhost-$port.txt
             # uniscan -u https://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u https://$rhost:$port -qweds"
@@ -455,6 +446,7 @@ Enum_SNMP() {
     cd $cwd
     if grep -q "199" top-open-ports.txt; then
         printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
+
         echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
         onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
         echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
@@ -462,6 +454,7 @@ Enum_SNMP() {
         snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
     fi
     if ! grep -q "199" top-open-ports.txt; then
+        npid
         grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan-$rhost.txt
         if grep -q "161" udp-scan-$rhost.txt; then
             printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
@@ -528,15 +521,21 @@ Clean_Up() {
     sleep 3
     cwd=$(pwd)
     cd $cwd
-    rm udp-scan-$rhost.txt 2>/dev/null
-    rm openports-nfs.txt 2>/dev/null
-    rm openportsFTP-$rhost.txt 2>/dev/null
-    rm openportsSSL-$rhost.txt 2>/dev/null
-    # rm allopenports2-$rhost.txt
-    if [[ -s cewl-list.txt ]]; then
-        mkdir -p wordlists &>/dev/null
-        find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
+    rm udp-scan-$rhost.txt
+    if [[ -e openportsFTP-$rhost.txt ]]; then
+        rm openportsFTP-$rhost.txt
+    elif [[ -e openports-nfs.txt ]]; then
+        rm openports-nfs.txt
+    elif [[ -e openportsSSL-$rhost.txt ]]; then
+        rm openportsSSL-$rhost.txt
+    elif [[ -e openports-nfs.txt ]]; then
+        rm openports-nfs.txt
+    else
+        :
     fi
+    # rm allopenports2-$rhost.txt
+    mkdir -p wordlists &>/dev/null
+    find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
