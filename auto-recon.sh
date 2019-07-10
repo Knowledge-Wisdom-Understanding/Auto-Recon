@@ -144,11 +144,11 @@ Enum_Web() {
             cd - &>/dev/null
             ##################################################################################
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log"
-            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 50 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log
+            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
-            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null"
+            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null"
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
             if [ "$wp1" -o "$wp2" ]; then
@@ -303,14 +303,14 @@ Enum_Web_SSL() {
             echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port"
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
-            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt"
-            gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt
+            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
+            gobuster dir -u https://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
             echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$rhost-$port.txt"
             nikto -ask=no -host https://$rhost:$port -ssl -output niktoscan-$rhost-$port.txt
             # uniscan -u https://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u https://$rhost:$port -qweds"
-            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist2 -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
+            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist2 -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
 
             if [ $(grep -i "WordPress" whatweb-ssl-$rhost-$port.log 2>/dev/null) ]; then
                 echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log"
