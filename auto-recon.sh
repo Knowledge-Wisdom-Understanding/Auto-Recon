@@ -277,7 +277,7 @@ dns_enum() {
 }
 
 Enum_Web_SSL() {
-    grep -E 'https|ssl/http' top-open-services.txt | cut -d "/" -f 1 >openportsSSL-$rhost.txt
+    grep -E 'https|ssl/http|ssl/unknown' top-open-services.txt | cut -d "/" -f 1 >openportsSSL-$rhost.txt
     if [[ -s openportsSSL-$rhost.txt ]]; then
         portfilenameSSL=openportsSSL-$rhost.txt
         # echo $portfilenameSSL
@@ -521,18 +521,12 @@ Clean_Up() {
     sleep 3
     cwd=$(pwd)
     cd $cwd
-    rm udp-scan-$rhost.txt
-    if [[ -e openportsFTP-$rhost.txt ]]; then
-        rm openportsFTP-$rhost.txt
-    elif [[ -e openports-nfs.txt ]]; then
-        rm openports-nfs.txt
-    elif [[ -e openportsSSL-$rhost.txt ]]; then
-        rm openportsSSL-$rhost.txt
-    elif [[ -e openports-nfs.txt ]]; then
-        rm openports-nfs.txt
-    else
-        :
-    fi
+    rm udp-scan-$rhost.txt 2>/dev/null
+    rm openports-nfs.txt 2>/dev/null
+    rm openportsFTP-$rhost.txt 2>/dev/null
+    rm openportsSSL-$rhost.txt 2>/dev/null
+    rm openports-web-$rhost.txt 2>/dev/null
+    rm httpports-$rhost.txt 2>/dev/null
     # rm allopenports2-$rhost.txt
     mkdir -p wordlists &>/dev/null
     find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
