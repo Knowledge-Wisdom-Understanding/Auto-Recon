@@ -210,7 +210,7 @@ Enum_Web() {
 }
 
 Web_Vulns() {
-    grep -w "http" top-open-services.txt | cut -d "/" -f 1 >openports-web-$rhost.txt
+    grep -v "ssl" top-open-services.txt | grep -w "http" | cut -d "/" -f 1 >openports-web-$rhost.txt
     if [[ -s openports-web-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
         nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
