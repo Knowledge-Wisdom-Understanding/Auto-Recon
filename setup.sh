@@ -61,6 +61,5 @@ git clone https://github.com/aboul3la/Sublist3r.git
 cd /opt
 cd Auto-Recon
 chmod +x auto-recon.sh
-chmod +x smb_enum_all.sh
 
 echo -e "${DOPE} Congratulations, All tools installed successfully!"
