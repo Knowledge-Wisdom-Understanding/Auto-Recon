@@ -143,12 +143,12 @@ Enum_Web() {
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             ##################################################################################
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -t 50 -e php,asp,aspx -x 403 --plain-text-report dirsearch-$rhost-$port.log"
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
-            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null"
+            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt"
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
             if [ "$wp1" -o "$wp2" ]; then
@@ -454,7 +454,6 @@ Enum_SNMP() {
         snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
     fi
     if ! grep -q "199" top-open-ports.txt; then
-        npid
         grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan-$rhost.txt
         if grep -q "161" udp-scan-$rhost.txt; then
             printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
