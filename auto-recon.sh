@@ -99,7 +99,7 @@ Open_Ports_Scan() {
 }
 
 Enum_Web() {
-    grep -v "ssl" top-open-services.txt | grep -w "http" | cut -d "/" -f 1 >httpports-$rhost.txt
+    grep -v "ssl" top-open-services.txt | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >httpports-$rhost.txt
     if [[ -s httpports-$rhost.txt ]]; then
         portfilename=httpports-$rhost.txt
         # echo $portfilename
@@ -148,7 +148,7 @@ Enum_Web() {
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
-            echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt"
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -e php,asp,aspx,html,txt,js -x 403 -t 80 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log"
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
             if [ "$wp1" -o "$wp2" ]; then
@@ -210,7 +210,7 @@ Enum_Web() {
 }
 
 Web_Vulns() {
-    grep -v "ssl" top-open-services.txt | grep -w "http" | cut -d "/" -f 1 >openports-web-$rhost.txt
+    grep -v "ssl" top-open-services.txt | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >openports-web-$rhost.txt
     if [[ -s openports-web-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
         nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
