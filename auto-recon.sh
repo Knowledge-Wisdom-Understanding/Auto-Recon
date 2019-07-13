@@ -23,7 +23,7 @@ END='\e[0m'
 
 helpFunction() {
     echo -e "Usage: $0 -t <Target IP>"
-    echo " Scan a single host and show subnet hosts "
+    echo "Scan a single host and show subnet hosts "
     echo "Arguments must be specified in the order as follows: "
     echo "options:"
     echo " "
@@ -56,13 +56,6 @@ elif [ "$#" -gt 2 ]; then
     exitFunction
 else
     rhost=${arg[1]}
-fi
-
-if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    :
-else
-    echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
-    exit 1
 fi
 
 # Function Definitions
@@ -692,12 +685,17 @@ POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     case "${END_OF_OPT}${1}" in
     -h | --help)
-        helpFunction
-        0
+        helpFunction 0
         ;;
     -t | --target)
         shift
         rhost="$1"
+        if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            :
+        else
+            echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
+            exit 1
+        fi
         getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
@@ -719,6 +717,12 @@ while [[ $# -gt 0 ]]; do
     -a | --all)
         shift
         rhost="$1"
+        if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            :
+        else
+            echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
+            exit 1
+        fi
         getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
@@ -741,6 +745,12 @@ while [[ $# -gt 0 ]]; do
     -H | --HTB)
         shift
         rhost="$1"
+        if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            :
+        else
+            echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
+            exit 1
+        fi
         Open_Ports_Scan 0
         Web_Vulns 0
         Enum_Web 0
