@@ -13,7 +13,6 @@ banner1() {
     echo -e ""
 
 }
-banner1
 
 DOPE='\e[1;32;92m[+]\e[0m'
 NOTDOPE='\e[31m[+]\e[0m'
@@ -22,20 +21,15 @@ YELLOW='\e[93m'
 END='\e[0m'
 
 helpFunction() {
-    echo -e "Usage: $0 -t <Target IP>"
-    echo "Scan a single host and show subnet hosts "
-    echo "Arguments must be specified in the order as follows: "
-    echo "options:"
+    echo -e "${DOPE} Usage: $0 [options...] <Target IP>"
     echo " "
-    echo "-h, --help      Show Usage and command arguments"
+    echo " -h, --help         Show Usage and command arguments"
     echo " "
-    echo "-a, --all       Scan The Entire Subnet!"
-    echo -e "Usage: $0 -a <Target IP>"
-    echo -e "Usage: $0 --all <Target IP>"
+    echo " -t, --target       Scan a single host and show subnet hosts"
     echo " "
-    echo "-H, --HTB       Scan Single Target ignore nmap subnet scan"
-    echo -e "Usage: $0 -H <Target IP>"
-    echo -e "Usage: $0 --HTB <Target IP>"
+    echo " -a, --all          Scan The Entire Subnet!"
+    echo " "
+    echo " -H, --HTB          Scan Single Target ignore nmap subnet scan"
     if [ -n "$1" ]; then
         exit "$1"
     fi
@@ -649,9 +643,9 @@ __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫
 |   ||%%(        # }|{  #
 |___|,  \\  cyou    }|{     ,            .  ,,   __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡  .                ,
 EOF
+    echo ""
 }
 # you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star
-echo ""
 
 # Pre-process options to:
 # - expand -xyz into -x -y -z
@@ -696,6 +690,7 @@ while [[ $# -gt 0 ]]; do
             echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
             exit 1
         fi
+        banner1
         getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
@@ -723,6 +718,7 @@ while [[ $# -gt 0 ]]; do
             echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
             exit 1
         fi
+        banner1
         getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
@@ -751,6 +747,7 @@ while [[ $# -gt 0 ]]; do
             echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
             exit 1
         fi
+        banner1
         Open_Ports_Scan 0
         Web_Vulns 0
         Enum_Web 0
