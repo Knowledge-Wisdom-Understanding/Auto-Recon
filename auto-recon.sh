@@ -15,7 +15,7 @@ banner1() {
 }
 banner1
 
-DOPE='\e[92m[+]\e[0m'
+DOPE='\e[1;32;92m[+]\e[0m'
 NOTDOPE='\e[31m[+]\e[0m'
 TEAL='\e[96m'
 YELLOW='\e[93m'
@@ -416,27 +416,28 @@ Intense_Nmap_UDP_Scan() {
 
 Enum_SMB() {
     if [[ $(grep -i "netbios-ssn" top-open-services.txt) ]] || [[ $(grep -i "microsoft-ds" top-open-services.txt) ]]; then
-        echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-scan-$rhost.log
-        smbclient -L //$rhost -U "guest"% | tee -a smb-scan-$rhost.log
+        echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-color-scan-$rhost.log
+        smbclient -L //$rhost -U "guest"% | tee -a smb-color-scan-$rhost.log
 
-        echo -e "${DOPE} Running ENUM4LINUX" | tee -a smb-scan-$rhost.log
-        enum4linux -av $rhost | tee -a smb-scan-$rhost.log
+        echo -e "${DOPE} Running ENUM4LINUX" | tee -a smb-color-scan-$rhost.log
+        enum4linux -av $rhost | tee -a smb-color-scan-$rhost.log
 
-        echo -e "${DOPE} Running NMBLOOKUP" | tee -a smb-scan-$rhost.log
-        nmblookup -A $rhost | tee -a smb-scan-$rhost.log
+        echo -e "${DOPE} Running NMBLOOKUP" | tee -a smb-color-scan-$rhost.log
+        nmblookup -A $rhost | tee -a smb-color-scan-$rhost.log
 
-        echo -e "${DOPE} Running All SMB nmap Vuln / Enum checks" | tee -a smb-scan-$rhost.log
-        nmap -vv -sV -Pn -p139,445 --script smb-enum-domains.nse,smb-enum-groups.nse,smb-enum-processes.nse,smb-enum-sessions.nse,smb-enum-shares.nse,smb-enum-users.nse,smb-ls.nse,smb-mbenum.nse,smb-os-discovery.nse,smb-print-text.nse,smb-psexec.nse,smb-security-mode.nse,smb-server-stats.nse,smb-system-info.nse,smb-vuln-conficker.nse,smb-vuln-cve2009-3103.nse,smb-vuln-ms06-025.nse,smb-vuln-ms07-029.nse,smb-vuln-ms08-067.nse,smb-vuln-ms10-054.nse,smb-vuln-ms10-061.nse,smb-vuln-ms17-010.nse --script-args=unsafe=1 -oA nmap/smbvulns-$rhost $rhost | tee -a smb-scan-$rhost.log
+        echo -e "${DOPE} Running All SMB nmap Vuln / Enum checks" | tee -a smb-color-scan-$rhost.log
+        nmap -vv -sV -Pn -p139,445 --script smb-enum-domains.nse,smb-enum-groups.nse,smb-enum-processes.nse,smb-enum-sessions.nse,smb-enum-shares.nse,smb-enum-users.nse,smb-ls.nse,smb-mbenum.nse,smb-os-discovery.nse,smb-print-text.nse,smb-psexec.nse,smb-security-mode.nse,smb-server-stats.nse,smb-system-info.nse,smb-vuln-conficker.nse,smb-vuln-cve2009-3103.nse,smb-vuln-ms06-025.nse,smb-vuln-ms07-029.nse,smb-vuln-ms08-067.nse,smb-vuln-ms10-054.nse,smb-vuln-ms10-061.nse,smb-vuln-ms17-010.nse --script-args=unsafe=1 -oA nmap/smbvulns-$rhost $rhost | tee -a smb-color-scan-$rhost.log
 
-        echo -e "${DOPE} Running NBTSCAN" | tee -a smb-scan-$rhost.log
-        nbtscan -rvh $rhost | tee -a smb-scan-$rhost.log
+        echo -e "${DOPE} Running NBTSCAN" | tee -a smb-color-scan-$rhost.log
+        nbtscan -rvh $rhost | tee -a smb-color-scan-$rhost.log
 
-        echo -e "${DOPE} Running smbmap" | tee -a smb-scan-$rhost.log
-        smbmap -H $rhost | tee -a smb-scan-$rhost.log
-        smbmap -u null -p "" -H $rhost | tee -a smb-scan-$rhost.log
-        smbmap -u null -p "" -H $rhost -R | tee -a smb-scan-$rhost.log
+        echo -e "${DOPE} Running smbmap" | tee -a smb-color-scan-$rhost.log
+        smbmap -H $rhost | tee -a smb-color-scan-$rhost.log
+        smbmap -u null -p "" -H $rhost | tee -a smb-color-scan-$rhost.log
+        smbmap -u null -p "" -H $rhost -R | tee -a smb-color-scan-$rhost.log
 
-        echo -e "${DOPE} All checks completed Successfully" | tee -a smb-scan-$rhost.log
+        echo -e "${DOPE} All checks completed Successfully" | tee -a smb-color-scan-$rhost.log
+        sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" smb-color-scan-$rhost.log >smb-scan-$rhost.log
     fi
 }
 
