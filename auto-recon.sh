@@ -52,6 +52,15 @@ else
     rhost=${arg[1]}
 fi
 
+validate_IP() {
+    if [[ $rhost =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        :
+    else
+        echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
+        exit 1
+    fi
+}
+
 # Function Definitions
 getUpHosts() {
     # Live Hosts
@@ -86,7 +95,7 @@ Open_Ports_Scan() {
 }
 
 Enum_Web() {
-    grep -v "ssl" top-open-services.txt | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >httpports-$rhost.txt
+    grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >httpports-$rhost.txt
     if [[ -s httpports-$rhost.txt ]]; then
         portfilename=httpports-$rhost.txt
         # echo $portfilename
@@ -204,6 +213,19 @@ Web_Vulns() {
     fi
 }
 
+Web_Proxy_Scan() {
+    grep -v "ssl" top-open-services.txt | grep -E "http-proxy|Squid" | cut -d "/" -f 1 >openports-webproxies-$rhost.txt
+    portfilename3=openports-webproxies-$rhost.txt
+    # echo $portfilename
+    httpPortsLines3=$(cat $portfilename3)
+    for port in $httpPortsLines3; do
+        if [[ -s openports-webproxies-$rhost.txt ]]; then
+            echo -e "Found http-proxy at http://$rhost:$port"
+            nikto -h http://$rhost/ -useproxy http://$rhost:$port/
+        fi
+    done
+}
+
 dns_enum() {
     cwd=$(pwd)
     cat sslscan-$rhost-$port.log | grep "Subject" | awk '{print $2}' >domain.txt
@@ -221,7 +243,7 @@ dns_enum() {
     done
     if [[ -s domain.txt ]] && [[ -n $domainName ]]; then
         set -- $domainName
-        echo -e "${DOPE} Target has $domainName"
+        echo -e "${DOPE} Target has domain: $domainName"
         echo -e "${DOPE} Creating backup of /etc/hosts file in $cwd"
         cat /etc/hosts >etc-hosts-backup2.txt
         if grep -q "$rhost  $domainName" /etc/hosts; then
@@ -241,11 +263,42 @@ dns_enum() {
                     :
                 else
                     dmainMinusDot=$(echo "${dmain:0:-1}")
-                    sed -i "/$domainName/ s/$/ $dmainMinusDot/" /etc/hosts
+                    if grep -q "$dmainMinusDot" /etc/hosts; then
+                        :
+                    else
+                        sed -i "/$domainName/ s/$/ $dmainMinusDot/" /etc/hosts
+                    fi
                 fi
             done
+            echo -e "${YELLOW}#################################################################################################### ${END}"
             cat /etc/hosts
 
+        fi
+        curl -sSik https://$rhost:$port -m 10 -o homepage-source.html &>/dev/null
+        sed -n 's/.*href="\([^"]*\).*/\1/p' homepage-source.html >links.txt
+        cat links.txt | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/" >urls.txt
+        urlsList=urls.txt
+        loopUrlsList=$(cat $urlsList)
+        if [[ -s urls.txt ]]; then
+            for url in $loopUrlsList; do
+                if [[ $url == *".htb" ]]; then
+                    echo "${DOPE} found .htb domain: $url "
+                    if grep -q "$rhost  $domainName" /etc/hosts; then
+                        if grep -q "$url" /etc/hosts; then
+                            :
+                        else
+                            echo "${DOPE} Adding $url to /etc/hosts file"
+                            sed -i "/$domainName/ s/$/ $url/" /etc/hosts
+                        fi
+                    else
+                        :
+                    fi
+                else
+                    :
+                fi
+            done
+            echo -e "${YELLOW}#################################################################################################### ${END}"
+            cat /etc/hosts
         fi
         echo -e "${DOPE} Running DNSRECON!"
         dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log
@@ -290,8 +343,8 @@ Enum_Web_SSL() {
             echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port"
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
-            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
-            gobuster dir -u https://$rhost:$port -w $wordlist -l -t 80 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
+            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
+            gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
             echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$rhost-$port.txt"
             nikto -ask=no -host https://$rhost:$port -ssl -output niktoscan-$rhost-$port.txt
             # uniscan -u https://$rhost:$port -qweds
@@ -536,6 +589,9 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "niktoscan*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "urls.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "links.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "homepage-source.html" -exec mv {} $cwd/$rhost-report/ \;
     else
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
@@ -557,6 +613,9 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "niktoscan*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "urls.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "links.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "homepage-source.html" -exec mv {} $cwd/$rhost-report/ \;
     fi
 
 }
@@ -583,6 +642,7 @@ Remaining_Hosts_All_Scans() {
             rhost=$target
             Open_Ports_Scan
             Web_Vulns
+            Web_Proxy_Scan
             Enum_Web
             unset rhost
             set -- "$target" "${@:3}"
@@ -684,16 +744,12 @@ while [[ $# -gt 0 ]]; do
     -t | --target)
         shift
         rhost="$1"
-        if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            :
-        else
-            echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
-            exit 1
-        fi
-        banner1
+        validate_IP
+        banner1 0
         getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
+        Web_Proxy_Scan 0
         Enum_Web 0
         Enum_Web_SSL 0
         ftp_scan 0
@@ -712,16 +768,12 @@ while [[ $# -gt 0 ]]; do
     -a | --all)
         shift
         rhost="$1"
-        if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            :
-        else
-            echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
-            exit 1
-        fi
-        banner1
+        validate_IP
+        banner1 0
         getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
+        Web_Proxy_Scan 0
         Enum_Web 0
         Enum_Web_SSL 0
         ftp_scan 0
@@ -741,15 +793,11 @@ while [[ $# -gt 0 ]]; do
     -H | --HTB)
         shift
         rhost="$1"
-        if [[ $rhost =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            :
-        else
-            echo -e "\e[31m[+]\e[0m NOT A VALID IP ADDRESS"
-            exit 1
-        fi
-        banner1
+        validate_IP
+        banner1 0
         Open_Ports_Scan 0
         Web_Vulns 0
+        Web_Proxy_Scan 0
         Enum_Web 0
         Enum_Web_SSL 0
         ftp_scan 0
