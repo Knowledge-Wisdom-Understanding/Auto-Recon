@@ -91,7 +91,6 @@ Open_Ports_Scan() {
     nmap -vv -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/top-ports-$rhost $rhost
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d "/" -f 1 >top-open-ports.txt
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open >top-open-services.txt
-    # grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d " " -f 1 | cut -d "/" -f 1 | tr "\n" "," | head -c-1 >nmap-top-open-ports.txt
 }
 
 Enum_Web() {
