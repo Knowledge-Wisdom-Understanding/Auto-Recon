@@ -63,17 +63,14 @@ validate_IP() {
 
 # Function Definitions
 getUpHosts() {
-    # Live Hosts
     baseip=$(echo $rhost | cut -d "." -f1-3)
     cidr_range=$(echo $baseip".0")
     echo -e "${DOPE} Scanning Subnet..."
     nmap -sn $cidr_range/24 -oG /tmp/live-hosts.txt >/dev/null
     cat /tmp/live-hosts.txt | grep "Up" | cut -d " " -f2 >live-hosts-ip.txt
     rm /tmp/live-hosts.txt
-    # Live_Host=live-hosts-ip.txt
     echo -e "${DOPE} Live Hosts Recon On $cidr_range/24 Done!"
     cat live-hosts-ip.txt
-    # cat $uphostfile
 }
 
 Open_Ports_Scan() {
@@ -86,8 +83,6 @@ Open_Ports_Scan() {
         fi
     }
     create_nmap_dir
-    # nmap -v -Pn -A -O -p- --max-retries 1 --max-rate 500 --max-scan-delay 20 -T4 -oN nmap/FullTCP $rhost
-    #nmap -vv -sT -Pn -p- --disable-arp-ping -T4 -oA nmap/open-ports-$rhost $rhost
     nmap -vv -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/top-ports-$rhost $rhost
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d "/" -f 1 >top-open-ports.txt
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open >top-open-services.txt
@@ -125,7 +120,9 @@ Enum_Web() {
             echo -e "${DOPE} whatweb -v -a 3 --color=never http://$rhost:$port/ | tee whatweb-$rhost:$port.log"
             whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-$rhost-$port.log
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f http://$rhost:$port/"
-            wafw00f http://$rhost:$port/ | tee wafw00f-$rhost-$port.log
+            wafw00f http://$rhost:$port/ | tee wafw00f-color-$rhost-$port.log
+            sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" wafw00f-color-$rhost-$port.log >wafw00f-$rhost-$port.log
+            rm wafw00f-color-$rhost-$port.log
             echo -e "${DOPE} curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null"
             curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
             # gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null
@@ -162,7 +159,6 @@ Enum_Web() {
                     # brute force again with wpscan
                     sleep 3
                     wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute.txt
-                    # echo -e "${DOPE} 2 sleeping for 5 seconds to wait for wpscan process id :)"
                     sleep 5
                     if grep -i "No Valid Passwords Found" wordpress-cewl-brute.txt 2>/dev/null; then
                         if [ -s john-cool-list.txt ]; then
@@ -215,7 +211,6 @@ Web_Vulns() {
 Web_Proxy_Scan() {
     grep -v "ssl" top-open-services.txt | grep -E "http-proxy|Squid" | cut -d "/" -f 1 >openports-webproxies-$rhost.txt
     portfilename3=openports-webproxies-$rhost.txt
-    # echo $portfilename
     httpPortsLines3=$(cat $portfilename3)
     for port in $httpPortsLines3; do
         if [[ -s openports-webproxies-$rhost.txt ]]; then
@@ -333,7 +328,9 @@ Enum_Web_SSL() {
             echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-$rhost-$port.log"
             whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-$rhost-$port.log
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
-            wafw00f https://$rhost:$port/ | tee wafw00f-$rhost-$port.log
+            wafw00f https://$rhost:$port/ | tee wafw00f-color-$rhost-$port.log
+            sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" wafw00f-color-$rhost-$port.log >wafw00f-$rhost-$port.log
+            rm wafw00f-color-$rhost-$port.log
             echo -e "${DOPE} curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt"
             curl -sSik https://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
             ############## EYE-WITNESS ##########################################
@@ -477,6 +474,7 @@ Enum_SMB() {
 
         echo -e "${DOPE} All checks completed Successfully" | tee -a smb-color-scan-$rhost.log
         sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" smb-color-scan-$rhost.log >smb-scan-$rhost.log
+        rm smb-color-scan-$rhost.log
     fi
 }
 
