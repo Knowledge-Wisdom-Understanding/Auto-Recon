@@ -15,9 +15,9 @@ chmod +x setup.sh
 ### Usage:
 ```
 ./auto-recon.sh -h [--help]
-./auto-recon.sh -t [--target] RHOST
-./auto-recon.sh -a [--all] RHOST
-./auto-recon.sh -H [--HTB] RHOST
+./auto-recon.sh -t [--target] RHOST ...check up hosts in subnet then enumerate single RHOST
+./auto-recon.sh -a [--all] RHOST ...check up hosts in subnet then enumerate ALL UP RHOST's
+./auto-recon.sh -H [--HTB] RHOST ...enumerate single RHOST
 ```
 If you notice a bug or have a feature request. Please submit an issue. Thanks!
 Gobuster is now using version 3 syntax, upgrade to the latest version!
