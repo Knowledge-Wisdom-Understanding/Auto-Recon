@@ -58,6 +58,9 @@ echo -e "${DOPE} Installing Sublist3r"
 cd /opt
 git clone https://github.com/aboul3la/Sublist3r.git
 
+echo -e "${DOPE} Installing snmp-mibs-downloader. This will beautify snmp-walk output to more human readable format"
+apt install snmp-mibs-downloader -y
+
 cd /opt
 cd Auto-Recon
 chmod +x auto-recon.sh
