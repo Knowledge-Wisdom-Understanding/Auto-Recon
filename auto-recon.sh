@@ -187,8 +187,8 @@ Enum_Web() {
                 tcatport=$(cat $tcatportFile)
                 gtcatport=$(echo $tcatport)
                 if [[ $port -eq "$gtcatport" ]]; then
-                    echo -e "${DOPE} Found TomCat! Running: gobuster dir -u https://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
-                    gobuster dir -u https://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
+                    echo -e "${DOPE} Found TomCat! Running: gobuster dir -u http://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
+                    gobuster dir -u http://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
                 else
                     :
                 fi
@@ -247,7 +247,7 @@ dns_enum() {
             :
         fi
     done
-    if [[ -s domain.txt ]] && [[ -n $domainName ]]; then
+    if [[ -s domain.txt ]] && [[ -n $domainName ]] && [[ $domainName != "localhost" ]]; then
         set -- $domainName
         echo -e "${DOPE} Target has domain: $domainName"
         echo -e "${DOPE} Creating backup of /etc/hosts file in $cwd"
@@ -314,7 +314,7 @@ dns_enum() {
         cd /opt/Sublist3r && python3 sublist3r.py -d $domainName -o $reconDir/subdomains-$rhost-$port-$domainName.log
         cd - &>/dev/null
     fi
-    if [[ -n "$domainName" ]]; then
+    if [[ -n "$domainName" ]] && [[ $domainName != "localhost" ]]; then
         unset rhost
         rhost=$domainName
     else
@@ -603,7 +603,7 @@ Enum_Oracle() {
 }
 
 Clean_Up() {
-    sleep 3
+    # sleep 1
     cwd=$(pwd)
     cd $cwd
     rm udp-scan-$rhost.txt 2>/dev/null
