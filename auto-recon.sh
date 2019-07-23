@@ -136,7 +136,7 @@ Enum_Web() {
             cd - &>/dev/null
             ##################################################################################
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log"
-            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log
+            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak,tar,gz -x 403 --plain-text-report dirsearch-$rhost-$port.log
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
@@ -181,6 +181,17 @@ Enum_Web() {
             elif grep -i "WebDAV" whatweb-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url http://$rhost:$port/ | tee davtestscan-$rhost-$port.log"
                 davtest -move -sendbd auto -url http://$rhost:$port/ | tee davtestscan-$rhost-$port.log
+            elif grep -i "tomcat" top-open-services.txt 2>/dev/null; then
+                grep -i "tomcat" top-open-services.txt | cut -d "/" -f 1 >current-tomcat-port.txt
+                tcatportFile=current-tomcat-port.txt
+                tcatport=$(cat $tcatportFile)
+                gtcatport=$(echo $tcatport)
+                if [[ $port -eq "$gtcatport" ]]; then
+                    echo -e "${DOPE} Found TomCat! Running: gobuster dir -u https://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
+                    gobuster dir -u https://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
+                else
+                    :
+                fi
             elif grep -i "magento" whatweb-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost/ | tee magescan-$rhost-$port.log"
                 cd /opt/magescan
@@ -218,6 +229,7 @@ Web_Proxy_Scan() {
             nikto -h http://$rhost/ -useproxy http://$rhost:$port/
         fi
     done
+    rm openports-webproxies-$rhost.txt
 }
 
 dns_enum() {
@@ -323,7 +335,9 @@ Enum_Web_SSL() {
             wordlist2="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
             echo -e "${DOPE} Running The Following Commands"
             echo -e "${DOPE} sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log"
-            sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log
+            sslscan https://$rhost:$port | tee sslscan-color-$rhost-$port.log
+            sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" sslscan-color-$rhost-$port.log >sslscan-$rhost-$port.log
+            rm sslscan-color-$rhost-$port.log
             dns_enum
             echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-$rhost-$port.log"
             whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-$rhost-$port.log
@@ -415,6 +429,24 @@ ftp_scan() {
     fi
 }
 
+ldap_enum() {
+    if [[ $(grep -w "ldap" top-open-services.txt) ]] || [[ $(grep -w "389" top-open-ports.txt) ]]; then
+        echo -e "${DOPE} Found LDAP! Running Enum4Linux"
+        enum4linux -a -M -l -d $rhost | tee ldapenum-$rhost.txt
+    fi
+    if ! grep -q "389" top-open-ports.txt; then
+        grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan2-$rhost.txt
+        if grep -q "137" udp-scan2-$rhost.txt; then
+            echo -e "${DOPE} Found LDAP UDP port! Running Enum4Linux"
+            enum4linux -a -M -l -d $rhost | tee ldapenum-$rhost.txt
+            rm udp-scan2-$rhost.txt
+        else
+            rm udp-scan2-$rhost.txt
+        fi
+    fi
+
+}
+
 cups_enum() {
     if [[ $(grep -w "ipp" top-open-services.txt) ]] || [[ $(grep -w "631" top-open-ports.txt) ]]; then
         echo -e "${DOPE} Found ipp cups Running nmap command:"
@@ -428,6 +460,7 @@ nfs_enum() {
     if grep -q "111" openports-nfs.txt; then
         echo -e "${DOPE} nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost"
         nmap -v -sV -Pn -p 111 --script=nfs-ls.nse,nfs-statfs.nse,nfs-showmount.nse -oA nmap/nfs-$rhost $rhost
+        showmount -e $rhost 2>&1 | tee nfs-showmount-$rhost.txt
     fi
 }
 
@@ -490,6 +523,13 @@ Enum_SNMP() {
         echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
         # echo -e "${DOPE} Running: snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-scan.log "
         snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
+        # apt install snmp-mibs-downloader  # then comment out mibs : in /etc/snmp/snmp.conf
+        if grep -q "timeout" snmpenum-$rhost.log; then
+            echo -e "${DOPE} SNMP version 1 timed-out. Trying version 2. ${DOPE} snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log"
+            snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log
+        else
+            :
+        fi
     fi
     if ! grep -q "199" top-open-ports.txt; then
         grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan-$rhost.txt
@@ -501,6 +541,14 @@ Enum_SNMP() {
             echo -e "${DOPE} Running: snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log "
             # echo -e "${DOPE} Running: snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-scan.log "
             snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
+            # apt install snmp-mibs-downloader  # then comment out mibs : in /etc/snmp/snmp.conf
+            if grep -q "timeout" snmpenum-$rhost.log; then
+                echo -e "${DOPE} SNMP version 1 timed-out. Trying version 2. ${DOPE} snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log"
+                snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log
+            else
+                :
+            fi
+
         fi
     fi
 
@@ -652,6 +700,7 @@ Remaining_Hosts_All_Scans() {
             nfs_enum
             Intense_Nmap_UDP_Scan
             Enum_SMB
+            ldap_enum
             cups_enum
             java_rmi_scan
             FULL_TCP_GOOD_MEASUERE_VULN_SCAN
@@ -753,6 +802,7 @@ while [[ $# -gt 0 ]]; do
         nfs_enum 0
         Intense_Nmap_UDP_Scan 0
         Enum_SMB 0
+        ldap_enum 0
         cups_enum 0
         java_rmi_scan 0
         FULL_TCP_GOOD_MEASUERE_VULN_SCAN 0
@@ -777,6 +827,7 @@ while [[ $# -gt 0 ]]; do
         nfs_enum 0
         Intense_Nmap_UDP_Scan 0
         Enum_SMB 0
+        ldap_enum 0
         cups_enum 0
         java_rmi_scan 0
         FULL_TCP_GOOD_MEASUERE_VULN_SCAN 0
@@ -801,6 +852,7 @@ while [[ $# -gt 0 ]]; do
         nfs_enum 0
         Intense_Nmap_UDP_Scan 0
         Enum_SMB 0
+        ldap_enum 0
         cups_enum 0
         java_rmi_scan 0
         FULL_TCP_GOOD_MEASUERE_VULN_SCAN 0
