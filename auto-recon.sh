@@ -30,6 +30,8 @@ helpFunction() {
     echo " -a, --all          Scan The Entire Subnet!"
     echo " "
     echo " -H, --HTB          Scan Single Target ignore nmap subnet scan"
+    echo " "
+    echo " -f, --file         Scan all hosts from a file of IP Addresses separated  1 per line"
     if [ -n "$1" ]; then
         exit "$1"
     fi
@@ -189,6 +191,7 @@ Enum_Web() {
                 if [[ $port -eq "$gtcatport" ]]; then
                     echo -e "${DOPE} Found TomCat! Running: gobuster dir -u http://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
                     gobuster dir -u http://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/tomcat.txt -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
+                    rm current-tomcat-port.txt
                 else
                     :
                 fi
@@ -197,7 +200,7 @@ Enum_Web() {
                 cd /opt/magescan
                 bin/magescan scan:all http://$rhost:$port/ | tee magento-$rhost-$port.log
                 cd - &>/dev/null
-                echo -e "${DOPE} Consider crawling site with this wordlist: /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt"
+                echo -e "${DOPE} Consider crawling site: python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$port.log"
             else
                 :
             fi
@@ -225,7 +228,7 @@ Web_Proxy_Scan() {
     httpPortsLines3=$(cat $portfilename3)
     for port in $httpPortsLines3; do
         if [[ -s openports-webproxies-$rhost.txt ]]; then
-            echo -e "Found http-proxy at http://$rhost:$port"
+            echo -e "${DOPE} Found http-proxy at http://$rhost:$port"
             nikto -h http://$rhost/ -useproxy http://$rhost:$port/
         fi
     done
@@ -365,7 +368,7 @@ Enum_Web_SSL() {
             if [ $(grep -i "WordPress" whatweb-ssl-$rhost-$port.log 2>/dev/null) ]; then
                 echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log"
                 wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log
-                sleep 5
+                sleep 1
                 if [[ -n $(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
                     grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
                     # create wordlist from web-page with cewl
@@ -377,7 +380,7 @@ Enum_Web_SSL() {
                     sleep 3
                     # brute force again with wpscan
                     wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
-                    sleep 5
+                    sleep 1
                     if grep -i "No Valid Passwords Found" wordpress-cewl-brute2.txt; then
                         if [ -s john-cool-list2.txt ]; then
                             wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
@@ -385,7 +388,7 @@ Enum_Web_SSL() {
                             echo "John wordlist is empty :("
                         fi
                         # if password not found then run it again with fasttrack.txt
-                        sleep 5
+                        sleep 1
                         if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute2.txt; then
                             wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
                         fi
@@ -400,6 +403,12 @@ Enum_Web_SSL() {
             elif grep -i "WebDAV" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url https://$rhost:$port/ | tee davtestscan-$rhost-$port.log"
                 davtest -move -sendbd auto -url https://$rhost:$port/ | tee -a davtestscan-$rhost-$port.log
+            elif grep -i "magento" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
+                echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all --insecure https://$rhost/ | tee magescan-$rhost-$port.log"
+                cd /opt/magescan
+                bin/magescan scan:all --insecure https://$rhost:$port/ | tee magento-$rhost-$port.log
+                cd - &>/dev/null
+                echo -e "${DOPE} Consider crawling site: python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$port.log"
             else
                 :
             fi
@@ -432,7 +441,7 @@ ftp_scan() {
 ldap_enum() {
     if [[ $(grep -w "ldap" top-open-services.txt) ]] || [[ $(grep -w "389" top-open-ports.txt) ]]; then
         echo -e "${DOPE} Found LDAP! Running Enum4Linux"
-        enum4linux -a -M -l -d $rhost | tee ldapenum-$rhost.txt
+        enum4linux -a -l -v $rhost | tee ldapenum-$rhost.txt
     fi
     if ! grep -q "389" top-open-ports.txt; then
         grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan2-$rhost.txt
@@ -556,7 +565,7 @@ Enum_SNMP() {
 
 FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     cwd=$(pwd)
-    echo -e "${DOPE} Running Full Nmap TCP port Scan For Good Measuere, just in case we missed one ;)"
+    echo -e "${DOPE} Running Full Nmap TCP port Scan ${DOPE} nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost"
     nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost
     echo -e "${YELLOW}#################################################################################################### ${END}"
     echo -e "${TEAL}########################### Checking Vulnerabilities  ############################################## ${END}"
@@ -570,7 +579,7 @@ vulnscan() {
     # grep -i "/tcp" nmap/full-tcp-scan-$rhost.nmap | grep -w "ssh" | cut -d "/" -f 1 >sshports-$rhost.txt
     if [[ -s allopenports2-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap VulnScan!"
-        nmap -v -sV -Pn --script nmap-vulners,vulscan --script-args vulscandb=scipvuldb.csv -p $(tr '\n' , <allopenports2-$rhost.txt) -oA nmap/vulnscan-$rhost $rhost
+        nmap -v -sV -Pn --script nmap-vulners,vulscan --script-args vulscandb=expliotdb.csv -p $(tr '\n' , <allopenports2-$rhost.txt) -oA nmap/vulnscan-$rhost $rhost
 
     fi
 }
@@ -751,7 +760,6 @@ __̴ı̴̴̡̡̡ ̡͌l̡̡̡ ̡͌l̡*̡̡ ̴̡ı̴̴̡ ̡̡͡|̲̲̲͡͡͡ ̲▫
 EOF
     echo ""
 }
-# you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star
 
 # Pre-process options to:
 # - expand -xyz into -x -y -z
@@ -810,6 +818,45 @@ while [[ $# -gt 0 ]]; do
         vulnscan 0
         Enum_Oracle 0
         Clean_Up 0
+        you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star 0
+        ;;
+    -f | --file)
+        shift
+        filearg=$1
+        if [[ -f $filearg ]]; then
+            targets=$(cat $filearg)
+            for target in $targets; do
+                unset rhost
+                set -- "$target" "${@:3}"
+                rhost=$target
+                validate_IP
+                banner1 0
+                Open_Ports_Scan 0
+                Web_Vulns 0
+                Web_Proxy_Scan 0
+                Enum_Web 0
+                unset rhost
+                set -- "$target" "${@:3}"
+                rhost=$target
+                Enum_Web_SSL
+                unset rhost
+                set -- "$target" "${@:3}"
+                rhost=$target
+                ftp_scan 0
+                nfs_enum 0
+                Intense_Nmap_UDP_Scan 0
+                Enum_SMB 0
+                cups_enum 0
+                java_rmi_scan 0
+                FULL_TCP_GOOD_MEASUERE_VULN_SCAN 0
+                Enum_SNMP 0
+                vulnscan 0
+                Enum_Oracle 0
+                Clean_Up 0
+            done
+        else
+            echo -e "${NOTDOPE} File must be 1 IP Address per line."
+        fi
         you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star 0
         ;;
     -a | --all)
