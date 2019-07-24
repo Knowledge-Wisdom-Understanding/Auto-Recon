@@ -106,7 +106,7 @@ Enum_Web() {
             if grep -q "$rhost" /etc/hosts; then
                 :
             else
-                sed -i "3i$rhost  $redirect_domain" /etc/hosts
+                sed -i $"3i$rhost\t$redirect_domain" /etc/hosts
             fi
             unset rhost
             rhost=$redirect_domain
@@ -255,11 +255,11 @@ dns_enum() {
         echo -e "${DOPE} Target has domain: $domainName"
         echo -e "${DOPE} Creating backup of /etc/hosts file in $cwd"
         cat /etc/hosts >etc-hosts-backup2.txt
-        if grep -q "$rhost  $domainName" /etc/hosts; then
+        if grep -q $"$rhost\t$domainName" /etc/hosts; then
             :
         else
             echo -e "${DOPE} Adding $domainName to /etc/hosts file"
-            sed -i "3i$rhost  $domainName" /etc/hosts
+            sed -i $"3i$rhost\t$domainName" /etc/hosts
         fi
         echo -e "${DOPE} Checking for Zone Transfer on $rhost:$port $domainName"
         dig axfr @$rhost $domainName | tee zone-transfer-$rhost-$port-$domainName.txt
@@ -292,7 +292,7 @@ dns_enum() {
             for url in $loopUrlsList; do
                 if [[ $url == *".htb" ]]; then
                     echo "${DOPE} found .htb domain: $url "
-                    if grep -q "$rhost  $domainName" /etc/hosts; then
+                    if grep -q $"$rhost\t$domainName" /etc/hosts; then
                         if grep -q "$url" /etc/hosts; then
                             :
                         else
@@ -579,7 +579,7 @@ vulnscan() {
     # grep -i "/tcp" nmap/full-tcp-scan-$rhost.nmap | grep -w "ssh" | cut -d "/" -f 1 >sshports-$rhost.txt
     if [[ -s allopenports2-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap VulnScan!"
-        nmap -v -sV -Pn --script nmap-vulners,vulscan --script-args vulscandb=expliotdb.csv -p $(tr '\n' , <allopenports2-$rhost.txt) -oA nmap/vulnscan-$rhost $rhost
+        nmap -v -sV -Pn --script nmap-vulners,vulscan --script-args vulscandb=exploitdb.csv -p $(tr '\n' , <allopenports2-$rhost.txt) -oA nmap/vulnscan-$rhost $rhost
 
     fi
 }
