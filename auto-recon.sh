@@ -653,7 +653,9 @@ dnsCheckHTB() {
             done
         fi
     done
-    cat aquaurls.txt | sort -u | aquatone -out dns_aquatone
+    if [[ -s aquaurls.txt ]]; then
+        cat aquaurls.txt | sort -u | aquatone -out dns_aquatone
+    fi
 }
 
 screenshotWEB() {
