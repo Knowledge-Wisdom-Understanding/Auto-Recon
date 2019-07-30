@@ -31,7 +31,7 @@ helpFunction() {
     echo " "
     echo " -H, --HTB          Scan Single Target ignore nmap subnet scan"
     echo " "
-    echo " -f, --file         Scan all hosts from a file of IP Addresses separated  1 per line"
+    echo " -f, --file         Scan all hosts from a file of IP Addresses separated 1 per line"
     if [ -n "$1" ]; then
         exit "$1"
     fi
@@ -237,6 +237,7 @@ Web_Proxy_Scan() {
 
 dns_enum() {
     cwd=$(pwd)
+    dig -x $rhost | dig-$rhost-output.txt
     cat sslscan-$rhost-$port.log | grep "Subject" | awk '{print $2}' >domain.txt
     domainName=$(grep "Subject" sslscan-$rhost-$port.log | awk '{print $2}')
     wildcards=('*' '?' '|')
@@ -632,6 +633,7 @@ dnsCheckHTB() {
             done
             htbdomains2=$(cat htbdomainslist.txt | sort -u)
             for htbdomain2 in $htbdomains2; do
+                dig -x $rhost
                 dig axfr @$rhost $htbdomain2
                 echo -e "${DOPE} Running: Dnsrecon ${DOPE} dnsrecon -d $htbdomain2"
                 dnsrecon -d $htbdomain2 | tee dnsrecon-$rhost-$htbdomain2.log
@@ -661,11 +663,13 @@ dnsCheckHTB() {
 screenshotWEB() {
     cwd=$(pwd)
     cat dirsearch* | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >screenshot-URLS.txt
-    mkdir -p Screenshots
-    gowitness file -s screenshot-URLS.txt -d Screenshots
-    gowitness generate
-    cat screenshot-URLS.txt | aquatone
-    rm screenshot-URLS.txt
+    if [[ -s screenshot-URLS.txt ]]; then
+        mkdir -p Screenshots
+        gowitness file -s screenshot-URLS.txt -d Screenshots
+        gowitness generate
+        cat screenshot-URLS.txt | aquatone
+        rm screenshot-URLS.txt
+    fi
 }
 
 vulnscan() {
