@@ -91,7 +91,7 @@ Open_Ports_Scan() {
 }
 
 Enum_Web() {
-    grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >httpports-$rhost.txt
+    grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -v "(SSDP/UPnP)" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >httpports-$rhost.txt
     if [[ -s httpports-$rhost.txt ]]; then
         portfilename=httpports-$rhost.txt
         # echo $portfilename
@@ -664,13 +664,15 @@ dnsCheckHTB() {
 
 screenshotWEB() {
     cwd=$(pwd)
-    cat dirsearch* | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >screenshot-URLS.txt
-    if [[ -s screenshot-URLS.txt ]]; then
-        mkdir -p Screenshots
-        gowitness file -s screenshot-URLS.txt -d Screenshots
-        gowitness generate
-        cat screenshot-URLS.txt | aquatone
-        rm screenshot-URLS.txt
+    if [[ $(grep -E 'http|ssl/http|ssl/unknown|https|BaseHTTPServer' top-open-services.txt) ]]; then
+        cat dirsearch* | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >screenshot-URLS.txt
+        if [[ -s screenshot-URLS.txt ]]; then
+            mkdir -p Screenshots
+            gowitness file -s screenshot-URLS.txt -d Screenshots
+            gowitness generate
+            cat screenshot-URLS.txt | aquatone
+            rm screenshot-URLS.txt
+        fi
     fi
 }
 
