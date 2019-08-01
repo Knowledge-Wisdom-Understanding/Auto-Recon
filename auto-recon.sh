@@ -704,7 +704,7 @@ Enum_Oracle() {
         ./odat.py tnscmd -s $rhost -p 1521 --version
         ./odat.py tnscmd -s $rhost -p 1521 --status
         ./odat.py sidguesser -s $rhost -p 1521
-        ./odat.py passwordguesser -s $rhost -p 1521 -d XE --accounts-file accounts/accounts-multiple.txt
+        ./odat.py passwordguesser -s $rhost -p 1521 -d XE --accounts-file accounts/accounts_multiple.txt
         cd - &>/dev/null
         rm allopenports2-$rhost.txt
     else
