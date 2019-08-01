@@ -180,9 +180,11 @@ Enum_Web() {
             elif grep -i "Joomla" whatweb-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found Joomla! Running joomscan --url http://$rhost/ -ec | tee joomlascan-$rhost-$port.log"
                 joomscan --url http://$rhost:$port/ -ec | tee joomlascan-$rhost-$port.log
-            elif grep -i "WebDAV" whatweb-$rhost-$port.log 2>/dev/null; then
+            elif [[ $(grep -i "WebDAV" whatweb-$rhost-$port.log 2>/dev/null) ]] || [[ $(grep -w "PUT" nmap/http-vuln-enum-scan.nmap) ]]; then
                 echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url http://$rhost:$port/ | tee davtestscan-$rhost-$port.log"
                 davtest -move -sendbd auto -url http://$rhost:$port/ | tee davtestscan-$rhost-$port.log
+                echo -e "${DOPE} nmap -Pn -v -sV -p $port --script=http-iis-webdav-vuln.nse -oA nmap/webdav $rhost"
+                nmap -Pn -v -sV -p $port --script=http-iis-webdav-vuln.nse -oA nmap/webdav $rhost
             elif grep -i "tomcat" top-open-services.txt 2>/dev/null; then
                 grep -i "tomcat" top-open-services.txt | cut -d "/" -f 1 >current-tomcat-port.txt
                 tcatportFile=current-tomcat-port.txt
@@ -218,7 +220,7 @@ Web_Vulns() {
     grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -v "UPnP" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >openports-web-$rhost.txt
     if [[ -s openports-web-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
-        nmap -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
+        nmap -v -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
     fi
 }
 
@@ -229,7 +231,7 @@ Web_Proxy_Scan() {
     for port in $httpPortsLines3; do
         if [[ -s openports-webproxies-$rhost.txt ]]; then
             echo -e "${DOPE} Found http-proxy at http://$rhost:$port"
-            nikto -h http://$rhost/ -useproxy http://$rhost:$port/
+            nikto -h http://127.0.0.1/ -useproxy http://$rhost:$port/
         fi
     done
     rm openports-webproxies-$rhost.txt
@@ -641,8 +643,8 @@ dnsCheckHTB() {
                 reconDir=$(echo $cwd)
                 cd /opt/Sublist3r && python3 sublist3r.py -d $htbdomain2 -o $reconDir/subdomains-$rhost-$htbdomain2.log
                 cd - &>/dev/null
-                echo -e "${DOPE} Running: wfuzz ${DOPE} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt"
-                wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
+                echo -e "${DOPE} Manual Command to Run: wfuzz ${DOPE} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" "
+                # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
                 subfinder -d $htbdomain2 -o "$htbdomain2"-subfinder.log
                 break
             done
@@ -724,7 +726,7 @@ Clean_Up() {
     find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/dns_aquatone/ \;
+        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
@@ -760,7 +762,7 @@ Clean_Up() {
     else
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/dns_aquatone/ \;
+        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
