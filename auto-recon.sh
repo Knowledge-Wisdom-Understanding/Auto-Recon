@@ -91,7 +91,7 @@ Open_Ports_Scan() {
 }
 
 Enum_Web() {
-    grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -v "UPnP" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >httpports-$rhost.txt
+    grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >httpports-$rhost.txt
     if [[ -s httpports-$rhost.txt ]]; then
         portfilename=httpports-$rhost.txt
         # echo $portfilename
