@@ -32,6 +32,8 @@ helpFunction() {
     echo " -H, --HTB          Scan Single Target ignore nmap subnet scan"
     echo " "
     echo " -f, --file         Scan all hosts from a file of IP Addresses separated 1 per line"
+    echo " "
+    echo " -v, --version      Show Version Information"
     if [ -n "$1" ]; then
         exit "$1"
     fi
@@ -503,29 +505,38 @@ java_rmi_scan() {
 
 Intense_Nmap_UDP_Scan() {
     printf "\e[93m################### RUNNING NMAP TOP UDP PORTS ##################################################### \e[0m\n"
+    echo -e "${DOPE} nmap -sUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp-$rhost $rhost"
     nmap -sUV -v --reason -T4 --max-retries 3 --max-rtt-timeout 150ms -pU:53,67-69,111,123,135,137-139,161-162,445,500,514,520,631,998,1434,1701,1900,4500,5353,49152,49154 -oA nmap/udp-$rhost $rhost
 }
 
 Enum_SMB() {
     if [[ $(grep -i "netbios-ssn" top-open-services.txt) ]] || [[ $(grep -i "microsoft-ds" top-open-services.txt) ]]; then
         echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} smbclient -L //$rhost -U 'guest'%" | tee -a smb-color-scan-$rhost.log
         smbclient -L //$rhost -U "guest"% | tee -a smb-color-scan-$rhost.log
 
         echo -e "${DOPE} Running ENUM4LINUX" | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} enum4linux -av $rhost" | tee -a smb-color-scan-$rhost.log
         enum4linux -av $rhost | tee -a smb-color-scan-$rhost.log
 
         echo -e "${DOPE} Running NMBLOOKUP" | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} nmblookup -A $rhost" | tee -a smb-color-scan-$rhost.log
         nmblookup -A $rhost | tee -a smb-color-scan-$rhost.log
 
         echo -e "${DOPE} Running All SMB nmap Vuln / Enum checks" | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} nmap -vv -sV -Pn -p139,445 --script smb-enum-domains.nse,smb-enum-groups.nse,smb-enum-processes.nse,smb-enum-sessions.nse,smb-enum-shares.nse,smb-enum-users.nse,smb-ls.nse,smb-mbenum.nse,smb-os-discovery.nse,smb-print-text.nse,smb-psexec.nse,smb-security-mode.nse,smb-server-stats.nse,smb-system-info.nse,smb-vuln-conficker.nse,smb-vuln-cve2009-3103.nse,smb-vuln-ms06-025.nse,smb-vuln-ms07-029.nse,smb-vuln-ms08-067.nse,smb-vuln-ms10-054.nse,smb-vuln-ms10-061.nse,smb-vuln-ms17-010.nse --script-args=unsafe=1 -oA nmap/smbvulns-$rhost $rhost" | tee -a smb-color-scan-$rhost.log
         nmap -vv -sV -Pn -p139,445 --script smb-enum-domains.nse,smb-enum-groups.nse,smb-enum-processes.nse,smb-enum-sessions.nse,smb-enum-shares.nse,smb-enum-users.nse,smb-ls.nse,smb-mbenum.nse,smb-os-discovery.nse,smb-print-text.nse,smb-psexec.nse,smb-security-mode.nse,smb-server-stats.nse,smb-system-info.nse,smb-vuln-conficker.nse,smb-vuln-cve2009-3103.nse,smb-vuln-ms06-025.nse,smb-vuln-ms07-029.nse,smb-vuln-ms08-067.nse,smb-vuln-ms10-054.nse,smb-vuln-ms10-061.nse,smb-vuln-ms17-010.nse --script-args=unsafe=1 -oA nmap/smbvulns-$rhost $rhost | tee -a smb-color-scan-$rhost.log
 
         echo -e "${DOPE} Running NBTSCAN" | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} nbtscan -rvh $rhost" | tee -a smb-color-scan-$rhost.log
         nbtscan -rvh $rhost | tee -a smb-color-scan-$rhost.log
 
         echo -e "${DOPE} Running smbmap" | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} smbmap -H $rhost" | tee -a smb-color-scan-$rhost.log
         smbmap -H $rhost | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} smbmap -u null -p '' -H $rhost" | tee -a smb-color-scan-$rhost.log
         smbmap -u null -p "" -H $rhost | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} smbmap -u null -p '' -H $rhost -R" | tee -a smb-color-scan-$rhost.log
         smbmap -u null -p "" -H $rhost -R | tee -a smb-color-scan-$rhost.log
 
         echo -e "${DOPE} All checks completed Successfully" | tee -a smb-color-scan-$rhost.log
@@ -689,6 +700,7 @@ vulnscan() {
     # grep -i "/tcp" nmap/full-tcp-scan-$rhost.nmap | grep -w "ssh" | cut -d "/" -f 1 >sshports-$rhost.txt
     if [[ -s allopenports2-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap VulnScan!"
+        echo -e "${DOPE} nmap -v -sV -Pn --script nmap-vulners -p $(tr '\n' , <allopenports2-$rhost.txt) -oA nmap/vulnscan-$rhost $rhost"
         nmap -v -sV -Pn --script nmap-vulners -p $(tr '\n' , <allopenports2-$rhost.txt) -oA nmap/vulnscan-$rhost $rhost
 
     fi
@@ -699,18 +711,24 @@ Enum_Oracle() {
     cd $cwd
     reconDir2=$(echo $cwd)
     if grep -q "1521" allopenports2-$rhost.txt; then
-        echo -e "${DOPE} Found Oracle! Running NMAP Enumeration"
+        echo -e "${DOPE} Found Oracle! Running NMAP Enumeration "
+        echo -e "${DOPE} nmap -sV -p 1521 --script oracle-enum-users.nse,oracle-sid-brute.nse,oracle-tns-version.nse -oA nmap/oracle-$rhost $rhost"
         nmap -sV -p 1521 --script oracle-enum-users.nse,oracle-sid-brute.nse,oracle-tns-version.nse -oA nmap/oracle-$rhost $rhost
-        echo -e "${DOPE} Found Oracle! Running tnscmd10g Enumeration"
+        echo -e "${DOPE} tnscmd10g ping -h $rhost -p 1521 | tee oracle-$rhost.log"
         tnscmd10g ping -h $rhost -p 1521 | tee oracle-$rhost.log
+        echo -e "${DOPE} tnscmd10g version -h $rhost -p 1521 | tee oracle-$rhost.log"
         tnscmd10g version -h $rhost -p 1521 | tee oracle-$rhost.log
-        echo -e "${DOPE} Found Oracle! Running OSCANNER Enumeration"
+        echo -e "${DOPE} oscanner -v -s $rhost -P 1521 | tee oracle-$rhost.log"
         oscanner -v -s $rhost -P 1521 | tee oracle-$rhost.log
         echo -e "${DOPE} Running ODAT Enumeration"
         cd /opt/odat
+        echo -e "${DOPE} ./odat.py tnscmd -s $rhost -p 1521 --ping | tee $reconDir2/oracle-ping.txt"
         ./odat.py tnscmd -s $rhost -p 1521 --ping | tee $reconDir2/oracle-ping.txt
+        echo -e "${DOPE} ./odat.py tnscmd -s $rhost -p 1521 --version | tee $reconDir2/oracle-version.txt"
         ./odat.py tnscmd -s $rhost -p 1521 --version | tee $reconDir2/oracle-version.txt
+        echo -e "${DOPE} ./odat.py tnscmd -s $rhost -p 1521 --status | tee $reconDir2/oracle-status.txt"
         ./odat.py tnscmd -s $rhost -p 1521 --status | tee $reconDir2/oracle-status.txt
+        echo -e "${DOPE} ./odat.py sidguesser -s $rhost -p 1521 | tee $reconDir2/oracle-sid.txt"
         ./odat.py sidguesser -s $rhost -p 1521 | tee $reconDir2/oracle-sid.txt
         SIDS=$(cat $reconDir2/oracle-sid.txt | grep "server:" | rev | cut -d " " -f 1 | rev)
         sid_array=$(echo $SIDS | tr "," "\n")
@@ -751,8 +769,11 @@ Clean_Up() {
     find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -type d -name "wordlists" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "oracle_default_userpass.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
+        find $cwd/ -maxdepth 1 -name "accounts_multiple_lowercase.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
@@ -783,11 +804,13 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "html" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "wordlists" -exec mv {} $cwd/$rhost-report/ \;
 
     else
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -type d -name "wordlists" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "oracle_default_userpass.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
+        find $cwd/ -maxdepth 1 -name "accounts_multiple_lowercase.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
@@ -820,9 +843,36 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "html" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "wordlists" -exec mv {} $cwd/$rhost-report/ \;
     fi
 
+}
+
+show_Version() {
+    cat <<"EOF"
+@@@  @@@  @@@@@@@@  @@@@@@@    @@@@@@   @@@   @@@@@@   @@@  @@@  
+@@@  @@@  @@@@@@@@  @@@@@@@@  @@@@@@@   @@@  @@@@@@@@  @@@@ @@@  
+@@!  @@@  @@!       @@!  @@@  !@@       @@!  @@!  @@@  @@!@!@@@  
+!@!  @!@  !@!       !@!  @!@  !@!       !@!  !@!  @!@  !@!!@!@!  
+@!@  !@!  @!!!:!    @!@!!@!   !!@@!!    !!@  @!@  !@!  @!@ !!@!  
+!@!  !!!  !!!!!:    !!@!@!     !!@!!!   !!!  !@!  !!!  !@!  !!!  
+:!:  !!:  !!:       !!: :!!        !:!  !!:  !!:  !!!  !!:  !!!  
+ ::!!:!   :!:       :!:  !:!      !:!   :!:  :!:  !:!  :!:  !:!  
+  ::::     :: ::::  ::   :::  :::: ::    ::  ::::: ::   ::   ::  
+   :      : :: ::    :   : :  :: : :    :     : :  :   ::    :   
+                                                                 
+                                              
+     @@@         @@@@@@@@      @@@  @@@  @@@  
+    @@@@        @@@@@@@@@@     @@@  @@@  @@@  
+   @@!@!        @@!   @@@@     @@!  @@!  @@!  
+  !@!!@!        !@!  @!@!@     !@   !@   !@   
+ @!! @!!        @!@ @! !@!     @!@  @!@  @!@  
+!!!  !@!        !@!!!  !!!     !!!  !!!  !!!  
+:!!:!:!!:       !!:!   !!!                    
+!:::!!:::  :!:  :!:    !:!     :!:  :!:  :!:  
+     :::   :::  ::::::: ::      ::   ::   ::  
+     :::   :::   : : :  :      :::  :::  :::  
+
+EOF
 }
 
 Remaining_Hosts_All_Scans() {
@@ -1065,6 +1115,10 @@ while [[ $# -gt 0 ]]; do
         Enum_Oracle 0
         Clean_Up 0
         you_dont_have_to_drive_no_fancy_car_just_for_you_to_be_a_shining_star 0
+        ;;
+    -v | --version)
+        shift
+        show_Version 0
         ;;
     -*)
         exitFunction "$@"
