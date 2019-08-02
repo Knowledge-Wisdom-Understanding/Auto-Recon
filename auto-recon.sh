@@ -85,6 +85,14 @@ Open_Ports_Scan() {
         fi
     }
     create_nmap_dir
+    create_wordlists_dir() {
+        if [ -d wordlists ]; then
+            :
+        else
+            mkdir -p wordlists
+        fi
+    }
+    create_wordlists_dir
     nmap -vv -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/top-ports-$rhost $rhost
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d "/" -f 1 >top-open-ports.txt
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open >top-open-services.txt
@@ -220,7 +228,7 @@ Web_Vulns() {
     grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -v "UPnP" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >openports-web-$rhost.txt
     if [[ -s openports-web-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
-        nmap -v -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
+        nmap -vv -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
     fi
 }
 
@@ -689,28 +697,45 @@ vulnscan() {
 Enum_Oracle() {
     cwd=$(pwd)
     cd $cwd
-    # grep -w "1521/tcp open" nmap/full-tcp-scan-$rhost.nmap | cut -d "/" -f 1 >allopenports-$rhost.txt
+    reconDir2=$(echo $cwd)
     if grep -q "1521" allopenports2-$rhost.txt; then
         echo -e "${DOPE} Found Oracle! Running NMAP Enumeration"
         nmap -sV -p 1521 --script oracle-enum-users.nse,oracle-sid-brute.nse,oracle-tns-version.nse -oA nmap/oracle-$rhost $rhost
         echo -e "${DOPE} Found Oracle! Running tnscmd10g Enumeration"
-        tnscmd10g ping -h $rhost -p 1521 | tee -a oracle-$rhost.log
-        tnscmd10g version -h $rhost -p 1521 | tee -a oracle-$rhost.log
+        tnscmd10g ping -h $rhost -p 1521 | tee oracle-$rhost.log
+        tnscmd10g version -h $rhost -p 1521 | tee oracle-$rhost.log
         echo -e "${DOPE} Found Oracle! Running OSCANNER Enumeration"
-        oscanner -v -s $rhost -P 1521 | tee -a oracle-$rhost.log
-        cd /opt/odat/
+        oscanner -v -s $rhost -P 1521 | tee oracle-$rhost.log
         echo -e "${DOPE} Running ODAT Enumeration"
-        ./odat.py tnscmd -s $rhost -p 1521 --ping
-        ./odat.py tnscmd -s $rhost -p 1521 --version
-        ./odat.py tnscmd -s $rhost -p 1521 --status
-        ./odat.py sidguesser -s $rhost -p 1521
-        ./odat.py passwordguesser -s $rhost -p 1521 -d XE --accounts-file accounts/accounts_multiple.txt
+        cd /opt/odat
+        ./odat.py tnscmd -s $rhost -p 1521 --ping | tee $reconDir2/oracle-ping.txt
+        ./odat.py tnscmd -s $rhost -p 1521 --version | tee $reconDir2/oracle-version.txt
+        ./odat.py tnscmd -s $rhost -p 1521 --status | tee $reconDir2/oracle-status.txt
+        ./odat.py sidguesser -s $rhost -p 1521 | tee $reconDir2/oracle-sid.txt
+        SIDS=$(cat $reconDir2/oracle-sid.txt | grep "server:" | rev | cut -d " " -f 1 | rev)
+        sid_array=$(echo $SIDS | tr "," "\n")
+        cp /usr/share/metasploit-framework/data/wordlists/oracle_default_userpass.txt $reconDir2/oracle_default_userpass.txt
+        cp /opt/odat/accounts/accounts_multiple.txt $reconDir2/accounts_multiple.txt
+        sed 's/ /\//g' $reconDir2/oracle_default_userpass.txt -i
+        sed -e 's/\(.*\)/\L\1/' $reconDir2/accounts_multiple.txt >$reconDir2/accounts_multiple_lowercase.txt
+        rm $reconDir2/accounts_multiple.txt
+        if [[ -n $SIDS ]]; then
+            for sid in $sid_array; do
+                echo -e "${DOPE} Running ODAT passwordguesser ${DOPE} ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/oracle_default_userpass.txt --force-retry | tee $reconDir2/oracle-$sid-password-guesser.txt"
+                ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/oracle_default_userpass.txt --force-retry | tee $reconDir2/oracle-$sid-password-guesser.txt
+                if grep -i "Valid credentials found" $reconDir2/oracle-$sid-password-guesser.txt 2>/dev/null; then
+                    echo -e "${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE} Found Valid Credentials! ${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE}"
+                    :
+                else
+                    echo -e "${DOPE} Running ODAT passwordguesser ${DOPE} ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/accounts_multiple_lowercase.txt --force-retry | tee $reconDir2/oracle-$sid-2-password-guesser.txt"
+                    ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/accounts_multiple_lowercase.txt --force-retry | tee $reconDir2/oracle-$sid-2-password-guesser.txt
+                fi
+            done
+        fi
         cd - &>/dev/null
-        rm allopenports2-$rhost.txt
     else
-        rm allopenports2-$rhost.txt
+        :
     fi
-
 }
 
 Clean_Up() {
@@ -722,13 +747,12 @@ Clean_Up() {
     rm openportsFTP-$rhost.txt 2>/dev/null
     rm openportsSSL-$rhost.txt 2>/dev/null
     rm openports-web-$rhost.txt 2>/dev/null
-    rm httpports-$rhost.txt 2>/dev/null
-    # rm allopenports2-$rhost.txt
-    mkdir -p wordlists &>/dev/null
+    rm allopenports2-$rhost.txt 2>/dev/null
     find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
     if [ -d $rhost-report ]; then
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
@@ -765,6 +789,7 @@ Clean_Up() {
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
