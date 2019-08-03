@@ -760,12 +760,9 @@ screenshotWEB() {
     if [[ $(grep -E 'http|BaseHTTPServer' top-open-services.txt | grep -v "proxy") ]]; then
         cat dirsearch* | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >screenshot-URLS.txt
         if [[ -s screenshot-URLS.txt ]]; then
-            mkdir -p Screenshots
-            gowitness file -s screenshot-URLS.txt -d Screenshots
-            gowitness generate
             urlPorts=$(cat openports-web-$rhost.txt | tr '\n' ',')
             formattedUrlPorts=$(echo "${urlPorts::-1}")
-            cat screenshot-URLS.txt | aquatone -ports $formattedUrlPorts -out WEB
+            cat screenshot-URLS.txt | aquatone -ports $formattedUrlPorts -out WEBSCREENSHOTS
             rm screenshot-URLS.txt
         fi
     fi
@@ -779,7 +776,7 @@ screenshotWEBSSL() {
             mkdir -p ScreenshotsSSL
             urlSSLPorts=$(cat openportsSSL-$rhost.txt | tr '\n' ',')
             formattedSSLUrlPorts=$(echo "${urlSSLPorts::-1}")
-            cat screenshot-SSL-URLS.txt | aquatone -ports $formattedSSLUrlPorts -out WEBSSL
+            cat screenshot-SSL-URLS.txt | aquatone -ports $formattedSSLUrlPorts -out WEBSSLSCREENSHOTS
             rm screenshot-SSL-URLS.txt
         fi
     fi
@@ -885,7 +882,6 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "oracle_default_userpass.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "accounts_multiple_lowercase.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wpBrute.sh" -exec mv {} $cwd/$rhost-report/ \;
@@ -911,14 +907,10 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "gowitness.db" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "aquaurls.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "headers" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "Screenshots" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "screenshots" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEB" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEBSSL" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "html" -exec mv {} $cwd/$rhost-report/ \;
 
     else
         mkdir -p $rhost-report
@@ -927,7 +919,6 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "oracle_default_userpass.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "accounts_multiple_lowercase.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "aquatone_*.*" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "wpBrute.sh" -exec mv {} $cwd/$rhost-report/ \;
@@ -953,14 +944,10 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "gowitness.db" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "aquaurls.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "headers" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "Screenshots" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "screenshots" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEB" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEBSSL" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "html" -exec mv {} $cwd/$rhost-report/ \;
     fi
 
 }
