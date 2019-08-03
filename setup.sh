@@ -60,6 +60,7 @@ git clone https://github.com/aboul3la/Sublist3r.git
 
 cd /opt
 git clone https://github.com/michenriksen/aquatone.git
+cd aquatone
 wget https://github.com/michenriksen/aquatone/releases/download/v1.7.0/aquatone_linux_amd64_1.7.0.zip
 unzip -o aquatone_linux_amd64_1.7.0.zip
 apt install chromium -y
