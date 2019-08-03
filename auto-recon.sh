@@ -336,6 +336,8 @@ dns_enum() {
         cat /etc/hosts >etc-hosts-backup2.txt
         if grep -q $"$rhost\t$domainName" /etc/hosts; then
             :
+        elif [[ $rhost == 127.0.0.1 ]]; then
+            :
         else
             echo -e "${DOPE} Adding $domainName to /etc/hosts file"
             sed -i $"3i$rhost\t$domainName" /etc/hosts
@@ -352,6 +354,8 @@ dns_enum() {
                 else
                     dmainMinusDot=$(echo "${dmain:0:-1}")
                     if grep -q "$dmainMinusDot" /etc/hosts; then
+                        :
+                    elif [[ $rhost == 127.0.0.1 ]]; then
                         :
                     else
                         sed -i "/$domainName/ s/$/ $dmainMinusDot/" /etc/hosts
@@ -712,7 +716,9 @@ dnsCheckHTB() {
                 fi
             done
         fi
-        if grep -q "$rhost" /etc/hosts; then
+        if [[ $rhost == 127.0.0.1 ]]; then
+            :
+        elif grep -q "$rhost" /etc/hosts; then
             htbdomains3=$(grep $rhost /etc/hosts | awk '{$1= ""; print $0}')
             remwildcardDomains=$(echo $htbdomains3 | tr ' ' '\n')
             for wcDomain in $remwildcardDomains; do
