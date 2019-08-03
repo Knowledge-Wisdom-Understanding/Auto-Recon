@@ -240,70 +240,72 @@ Web_Vulns() {
 Web_Proxy_Scan() {
     grep -v "ssl" top-open-services.txt | grep -E "http-proxy|Squid" | cut -d "/" -f 1 >openports-webproxies-$rhost.txt
     proxyPort=$(grep -v "ssl" top-open-services.txt | grep -E "http-proxy|Squid" | cut -d "/" -f 1)
-    echo -e "${DOPE} Found http-proxy at http://$rhost:$proxyPort"
-    echo -e "${DOPE} Adding proxy port to /etc/proxychains.conf"
-    if grep -i "$rhost" /etc/proxychains.conf; then
-        :
-    else
-        echo "http $rhost $proxyPort" >>/etc/proxychains.conf
-    fi
-    echo -e "${DOPE} Running NMAP scan through http proxy"
-    echo -e "${DOPE} proxychains nmap -vv -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/proxychainScanTopPorts 127.0.0.1"
-    proxychains nmap -vv -sT -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/proxychainScanTopPorts 127.0.0.1
-    grep -v "filtered" nmap/proxychainScanTopPorts.nmap | grep open | cut -d "/" -f 1 >top-proxy-open-ports.txt
-    grep -v "filtered" nmap/proxychainScanTopPorts.nmap | grep open >top-proxy-open-services.txt
-    echo -e "${DOPE} proxychains nmap -vv -sT -Pn -sC -sV -p $(tr '\n' , <top-proxy-open-ports.txt) -oA nmap/proxychainServiceScan 127.0.0.1"
-    proxychains nmap -vv -sT -Pn -sC -sV -p $(tr '\n' , <top-proxy-open-ports.txt) -oA nmap/proxychainServiceScan 127.0.0.1
-    grep -v "ssl" top-proxy-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -v "(SSDP/UPnP)" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >http-proxy-ports-$rhost.txt
-    proxyPortfilename=http-proxy-ports-$rhost.txt
-    httpProxyPortsLines=$(cat $proxyPortfilename)
-    if [[ -s http-proxy-ports-$rhost.txt ]]; then
-        for webPort in $httpProxyPortsLines; do
-            echo -e "${DOPE} whatweb -v -a 3 --proxy $rhost:$proxyPort http://127.0.0.1:$webPort/"
-            whatweb -v -a 3 --proxy $rhost:$proxyPort http://127.0.0.1:$webPort/ | tee whatweb-color-proxy-$rhost-$webPort.log
-            sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-proxy-$rhost-$webPort.log >whatweb-proxy-$rhost-$webPort.log && rm whatweb-color-proxy-$rhost-$webPort.log
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ --plain-text-report proxy-crawl-$rhost-$webPort-$proxyPort.log"
-            python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ -w /usr/share/wordlists/dirb/big.txt --plain-text-report proxy-big-crawl-$rhost-$webPort-$proxyPort.log
-            echo -e "${DOPE} nikto -ask=no -host http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$rhost-$webPort-scan.txt"
-            nikto -ask=no -host http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$rhost-$webPort-scan.txt
-            wp3=$(grep -i "wordpress" proxy-big-crawl-$rhost-$webPort-$proxyPort.log)
-            wp4=$(grep -i "wordpress" whatweb-proxy-$rhost-$webPort.log)
-            wordpressURL=$(grep -i "wordpress" proxy-big-crawl-$rhost-$webPort-$proxyPort.log | awk '{print $3}' | head -n 1)
-            if [[ $wp3 ]] || [[ $wp4 ]]; then
-                echo -e "${DOPE} Found WordPress!"
-                if [[ -n $wordpressURL ]]; then
-                    echo -e "${DOPE} wpscan --no-update --url $wordpressURL --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort"
-                    wpscan --no-update --url $wordpressURL --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort | tee wpscan-$rhost-$webPort-$proxyPort.log
+    if [[ -s openports-webproxies-$rhost.txt ]]; then
+        echo -e "${DOPE} Found http-proxy at http://$rhost:$proxyPort"
+        echo -e "${DOPE} Adding proxy port to /etc/proxychains.conf"
+        if grep -i "$rhost" /etc/proxychains.conf; then
+            :
+        else
+            echo "http $rhost $proxyPort" >>/etc/proxychains.conf
+        fi
+        echo -e "${DOPE} Running NMAP scan through http proxy"
+        echo -e "${DOPE} proxychains nmap -vv -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/proxychainScanTopPorts 127.0.0.1"
+        proxychains nmap -vv -sT -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/proxychainScanTopPorts 127.0.0.1
+        grep -v "filtered" nmap/proxychainScanTopPorts.nmap | grep open | cut -d "/" -f 1 >top-proxy-open-ports.txt
+        grep -v "filtered" nmap/proxychainScanTopPorts.nmap | grep open >top-proxy-open-services.txt
+        echo -e "${DOPE} proxychains nmap -vv -sT -Pn -sC -sV -p $(tr '\n' , <top-proxy-open-ports.txt) -oA nmap/proxychainServiceScan 127.0.0.1"
+        proxychains nmap -vv -sT -Pn -sC -sV -p $(tr '\n' , <top-proxy-open-ports.txt) -oA nmap/proxychainServiceScan 127.0.0.1
+        grep -v "ssl" top-proxy-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -v "(SSDP/UPnP)" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >http-proxy-ports-$rhost.txt
+        proxyPortfilename=http-proxy-ports-$rhost.txt
+        httpProxyPortsLines=$(cat $proxyPortfilename)
+        if [[ -s http-proxy-ports-$rhost.txt ]]; then
+            for webPort in $httpProxyPortsLines; do
+                echo -e "${DOPE} whatweb -v -a 3 --proxy $rhost:$proxyPort http://127.0.0.1:$webPort/"
+                whatweb -v -a 3 --proxy $rhost:$proxyPort http://127.0.0.1:$webPort/ | tee whatweb-color-proxy-$rhost-$webPort.log
+                sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-proxy-$rhost-$webPort.log >whatweb-proxy-$rhost-$webPort.log && rm whatweb-color-proxy-$rhost-$webPort.log
+                echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ --plain-text-report proxy-crawl-$rhost-$webPort-$proxyPort.log"
+                python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ -w /usr/share/wordlists/dirb/big.txt --plain-text-report proxy-big-crawl-$rhost-$webPort-$proxyPort.log
+                echo -e "${DOPE} nikto -ask=no -host http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$rhost-$webPort-scan.txt"
+                nikto -ask=no -host http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$rhost-$webPort-scan.txt
+                wp3=$(grep -i "wordpress" proxy-big-crawl-$rhost-$webPort-$proxyPort.log)
+                wp4=$(grep -i "wordpress" whatweb-proxy-$rhost-$webPort.log)
+                wordpressURL=$(grep -i "wordpress" proxy-big-crawl-$rhost-$webPort-$proxyPort.log | awk '{print $3}' | head -n 1)
+                if [[ $wp3 ]] || [[ $wp4 ]]; then
+                    echo -e "${DOPE} Found WordPress!"
+                    if [[ -n $wordpressURL ]]; then
+                        echo -e "${DOPE} wpscan --no-update --url $wordpressURL --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort"
+                        wpscan --no-update --url $wordpressURL --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort | tee wpscan-$rhost-$webPort-$proxyPort.log
+                    else
+                        echo -e "${DOPE} wpscan --no-update --url http://127.0.0.1:$webPort/ --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort"
+                        wpscan --no-update --url http://127.0.0.1:$webPort/ --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort | tee wpscan-$rhost-$webPort-$proxyPort.log
+                    fi
+                elif grep -i "Drupal" whatweb-proxy-$rhost-$webPort.log 2>/dev/null; then
+                    echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://127.0.0.1:$webPort/ -t 32 | tee drupalscan-$rhost-$webPort.log"
+                    proxychains droopescan scan drupal -u http://127.0.0.1:$webPort/ -t 32 | tee drupalscan-$rhost-$webPort.log
+                elif grep -i "Joomla" whatweb-proxy-$rhost-$webPort.log 2>/dev/null; then
+                    echo -e "${DOPE} Found Joomla! Running joomscan --url http://$rhost/ -ec | tee joomlascan-$rhost-$webPort.log"
+                    joomscan --url http://127.0.0.1:$webPort/ -ec --proxy http://$rhost:$proxyPort | tee joomlascan-$rhost-$webPort.log
+                elif [[ $(grep -i "WebDAV" whatweb-proxy-$rhost-$webPort.log 2>/dev/null) ]] || [[ $(grep -w "PUT" nmap/proxychainServiceScan.nmap) ]]; then
+                    echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url http://$rhost:$webPort/ | tee davtestscan-$rhost-$webPort.log"
+                    proxychains davtest -move -sendbd auto -url http://127.0.0.1:$webPort/ | tee davtestscan-$rhost-$webPort.log
+                    echo -e "${DOPE} nmap -Pn -v -sV -p $webPort --script=http-iis-webdav-vuln.nse -oA nmap/webdav $rhost"
+                    proxychains nmap -sT -Pn -v -sV -p $webPort --script=http-iis-webdav-vuln.nse -oA nmap/webdav $rhost
+                elif grep -i "magento" whatweb-proxy-$rhost-$webPort.log 2>/dev/null; then
+                    echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost/ | tee magescan-$rhost-$webPort.log"
+                    cd /opt/magescan
+                    proxychains bin/magescan scan:all -n http://127.0.0.1:$webPort/ | tee magento-$rhost-$webPort.log
+                    cd - &>/dev/null
+                    echo -e "${DOPE} Consider crawling site: python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$webPort -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$webPort.log"
                 else
-                    echo -e "${DOPE} wpscan --no-update --url http://127.0.0.1:$webPort/ --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort"
-                    wpscan --no-update --url http://127.0.0.1:$webPort/ --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive --proxy http://$rhost:$proxyPort | tee wpscan-$rhost-$webPort-$proxyPort.log
+                    :
                 fi
-            elif grep -i "Drupal" whatweb-proxy-$rhost-$webPort.log 2>/dev/null; then
-                echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://127.0.0.1:$webPort/ -t 32 | tee drupalscan-$rhost-$webPort.log"
-                proxychains droopescan scan drupal -u http://127.0.0.1:$webPort/ -t 32 | tee drupalscan-$rhost-$webPort.log
-            elif grep -i "Joomla" whatweb-proxy-$rhost-$webPort.log 2>/dev/null; then
-                echo -e "${DOPE} Found Joomla! Running joomscan --url http://$rhost/ -ec | tee joomlascan-$rhost-$webPort.log"
-                joomscan --url http://127.0.0.1:$webPort/ -ec --proxy http://$rhost:$proxyPort | tee joomlascan-$rhost-$webPort.log
-            elif [[ $(grep -i "WebDAV" whatweb-proxy-$rhost-$webPort.log 2>/dev/null) ]] || [[ $(grep -w "PUT" nmap/proxychainServiceScan.nmap) ]]; then
-                echo -e "${DOPE} Found WebDAV! Running davtest -move -sendbd auto -url http://$rhost:$webPort/ | tee davtestscan-$rhost-$webPort.log"
-                proxychains davtest -move -sendbd auto -url http://127.0.0.1:$webPort/ | tee davtestscan-$rhost-$webPort.log
-                echo -e "${DOPE} nmap -Pn -v -sV -p $webPort --script=http-iis-webdav-vuln.nse -oA nmap/webdav $rhost"
-                proxychains nmap -sT -Pn -v -sV -p $webPort --script=http-iis-webdav-vuln.nse -oA nmap/webdav $rhost
-            elif grep -i "magento" whatweb-proxy-$rhost-$webPort.log 2>/dev/null; then
-                echo -e "${DOPE} Found Magento! Running /opt/magescan/bin/magescan scan:all http://$rhost/ | tee magescan-$rhost-$webPort.log"
-                cd /opt/magescan
-                proxychains bin/magescan scan:all -n http://127.0.0.1:$webPort/ | tee magento-$rhost-$webPort.log
-                cd - &>/dev/null
-                echo -e "${DOPE} Consider crawling site: python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$webPort -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$webPort.log"
-            else
-                :
-            fi
-        done
-        cat proxy-big-crawl-*.log | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >snProxyURLs.txt
-        urlProxyPorts=$(cat http-proxy-ports-$rhost.txt | tr '\n' ',')
-        formattedUrlProxyPorts=$(echo "${urlProxyPorts::-1}")
-        cat snProxyURLs.txt | aquatone -ports $formattedUrlProxyPorts -proxy http://$rhost:$proxyPort -out proxy_aquatone
-        rm snProxyURLs.txt
+            done
+            cat proxy-big-crawl-*.log | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >snProxyURLs.txt
+            urlProxyPorts=$(cat http-proxy-ports-$rhost.txt | tr '\n' ',')
+            formattedUrlProxyPorts=$(echo "${urlProxyPorts::-1}")
+            cat snProxyURLs.txt | aquatone -ports $formattedUrlProxyPorts -proxy http://$rhost:$proxyPort -out proxy_aquatone
+            rm snProxyURLs.txt
+        fi
     fi
 }
 
