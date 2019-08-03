@@ -33,7 +33,7 @@ helpFunction() {
     echo " "
     echo " -f, --file         Scan all hosts from a file of IP Addresses separated 1 per line"
     echo " "
-    echo " -v, --version      Show Version Information"
+    echo " -v, --version      Show Version Info"
     if [ -n "$1" ]; then
         exit "$1"
     fi
