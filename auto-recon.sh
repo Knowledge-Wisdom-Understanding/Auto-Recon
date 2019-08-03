@@ -29,11 +29,11 @@ helpFunction() {
     echo " "
     echo " -a, --all          Scan The Entire Subnet!"
     echo " "
-    echo " -H, --HTB          Scan Single Target ignore nmap subnet scan"
+    echo " -H, --HTB          Scan Single Target ignore nmap subnet scan and check for .htb domains"
     echo " "
     echo " -f, --file         Scan all hosts from a file of IP Addresses separated 1 per line"
     echo " "
-    echo " -v, --version      Show Version Info"
+    echo " -v, --version      Show Version Information"
     if [ -n "$1" ]; then
         exit "$1"
     fi
@@ -158,35 +158,39 @@ Enum_Web() {
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -e php,asp,aspx,html,txt,js -x 403 -t 80 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log"
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
-            if [ "$wp1" -o "$wp2" ]; then
+            if [[ $wp1 ]] || [[ $wp2 ]]; then
                 echo -e "${DOPE} Found WordPress! Running wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee -a wpscan-$rhost-$port.log"
                 wpscan --no-update --url http://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan-$rhost-$port.log
                 # echo -e "${DOPE} 1 sleeping for 5 seconds to wait for wpscan process id :)"
-                sleep 2
-                if [[ -n $(grep -i "User(s) Identified" wpscan-$rhost-$port.log) ]]; then
-                    grep -w -A 100 "User(s)" wpscan-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users.txt
-                    # create wordlist from web-page with cewl
-                    cewl http://$rhost:$port/ -m 3 -w cewl-list.txt
-                    sleep 10
-                    # add john rules to cewl wordlist
-                    echo -e "${DOPE} Adding John Rules to Cewl Wordlist!"
-                    john --rules --wordlist=cewl-list.txt --stdout >john-cool-list.txt
-                    # brute force again with wpscan
-                    sleep 3
-                    wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute.txt
-                    sleep 5
-                    if grep -i "No Valid Passwords Found" wordpress-cewl-brute.txt 2>/dev/null; then
-                        if [ -s john-cool-list.txt ]; then
-                            wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P john-cool-list.txt threads 50 | tee wordpress-john-cewl-brute.txt
-                        else
-                            echo "john wordlist is empty :("
-                        fi
-                    fi
-                    sleep 5
-                    if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute.txt 2>/dev/null; then
-                        wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute.txt
-                    fi
-                fi
+                echo -e "${DOPE} Creating manual WordPress Brute-Force Script!"
+                cat >wpBrute.sh <<EOF
+#!/bin/bash
+
+if [[ -n \$(grep -i "User(s) Identified" wpscan-$rhost-$port.log) ]]; then
+    grep -w -A 100 "User(s)" wpscan-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users.txt
+    # create wordlist from web-page with cewl
+    cewl http://$rhost:$port/ -m 3 -w cewl-list.txt
+    sleep 10
+    # add john rules to cewl wordlist
+    echo -e "${DOPE} Adding John Rules to Cewl Wordlist!"
+    john --rules --wordlist=cewl-list.txt --stdout >john-cool-list.txt
+    # brute force again with wpscan
+    sleep 3
+    wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute.txt
+    sleep 5
+    if grep -i "No Valid Passwords Found" wordpress-cewl-brute.txt 2>/dev/null; then
+        if [ -s john-cool-list.txt ]; then
+            wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P john-cool-list.txt threads 50 | tee wordpress-john-cewl-brute.txt
+        else
+            echo "john wordlist is empty :("
+        fi
+    fi
+    sleep 5
+    if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute.txt 2>/dev/null; then
+        wpscan --url http://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute.txt
+    fi
+fi
+EOF
             elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://$rhost -t 32 | tee drupalscan-$rhost-$port.log"
                 droopescan scan drupal -u http://$rhost:$port/ -t 32 | tee drupalscan-$rhost-$port.log
@@ -233,7 +237,7 @@ Web_Vulns() {
     grep -v "ssl" top-open-services.txt | grep -v "proxy" | grep -v "RPC" | grep -v "UPnP" | grep -E "http|BaseHTTPServer" | cut -d "/" -f 1 >openports-web-$rhost.txt
     if [[ -s openports-web-$rhost.txt ]]; then
         echo -e "${DOPE} Running nmap http vuln-scan on all open http ports!"
-        nmap -vv -Pn -sV --script=http-vuln*.nse,http-enum.nse,http-methods.nse,http-title.nse -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
+        nmap -vv -Pn -sC -sV -p $(tr '\n' , <openports-web-$rhost.txt) -oA nmap/http-vuln-enum-scan $rhost
     fi
 }
 
@@ -449,31 +453,36 @@ Enum_Web_SSL() {
                 echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log"
                 wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log
                 sleep 1
-                if [[ -n $(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
-                    grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
-                    # create wordlist from web-page with cewl
-                    cewl https://$rhost:$port/ -m 3 -w cewl-list2.txt
-                    sleep 10
-                    # add john rules to cewl wordlist
-                    echo -e "${DOPE} Adding John Rules to Cewl Wordlist!"
-                    john --rules --wordlist=cewl-list2.txt --stdout >john-cool-list2.txt
-                    sleep 3
-                    # brute force again with wpscan
-                    wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
-                    sleep 1
-                    if grep -i "No Valid Passwords Found" wordpress-cewl-brute2.txt; then
-                        if [ -s john-cool-list2.txt ]; then
-                            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
-                        else
-                            echo "John wordlist is empty :("
-                        fi
-                        # if password not found then run it again with fasttrack.txt
-                        sleep 1
-                        if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute2.txt; then
-                            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
-                        fi
-                    fi
-                fi
+                echo -e "${DOPE} Creating manual brute force script!"
+                cat >wordpressBrute.sh <<EOF
+#!/bin/bash
+
+if [[ -n \$(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
+    grep -w -A 100 "User(s)" wpscan2-$rhost-$port.log | grep -w "[+]" | cut -d " " -f 2 | head -n -7 >wp-users2.txt
+    # create wordlist from web-page with cewl
+    cewl https://$rhost:$port/ -m 3 -w cewl-list2.txt
+    sleep 10
+    # add john rules to cewl wordlist
+    echo "Adding John Rules to Cewl Wordlist!"
+    john --rules --wordlist=cewl-list2.txt --stdout >john-cool-list2.txt
+    sleep 3
+    # brute force again with wpscan
+    wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P cewl-list.txt threads 50 | tee wordpress-cewl-brute2.txt
+    sleep 1
+    if grep -i "No Valid Passwords Found" wordpress-cewl-brute2.txt; then
+        if [ -s john-cool-list2.txt ]; then
+            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P john-cool-list2.txt threads 50 | tee wordpress-john-cewl-brute2.txt
+        else
+            echo "John wordlist is empty :("
+        fi
+        # if password not found then run it again with fasttrack.txt
+        sleep 1
+        if grep -i "No Valid Passwords Found" wordpress-john-cewl-brute2.txt; then
+            wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-login.php -U wp-users2.txt -P /usr/share/wordlists/fasttrack.txt threads 50 | tee wordpress-fasttrack-brute2.txt
+        fi
+    fi
+fi
+EOF
             elif grep -i "Drupal" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee drupalscan-$rhost-$port.log"
                 droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
