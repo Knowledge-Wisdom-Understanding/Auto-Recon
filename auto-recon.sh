@@ -16,6 +16,7 @@ banner1() {
 
 DOPE='\e[1;32;92m[+]\e[0m'
 NOTDOPE='\e[31m[+]\e[0m'
+MANUALCMD='\e[1;32;93m[+]\e[0m'
 TEAL='\e[96m'
 YELLOW='\e[93m'
 END='\e[0m'
@@ -141,8 +142,9 @@ Enum_Web() {
             echo -e "${DOPE} curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null"
             curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
             # gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null
-            echo -e "${DOPE} nikto -h http://$rhost:$port -output niktoscan-$rhost-$port.txt"
-            nikto -ask=no -host http://$rhost:$port -output niktoscan-$rhost-$port.txt
+            echo -e "${DOPE} Running nikto as a background process to speed things up."
+            echo -e "${DOPE} nikto -ask=no -host http://$rhost:$port >> niktoscan-$rhost-$port.txt 2>&1 &"
+            nikto -ask=no -host http://$rhost:$port >>niktoscan-$rhost-$port.txt 2>&1 &
             ####################################################################################
             mkdir -p eyewitness-report-"$rhost"-"$port" && cd /opt/EyeWitness
             echo http://"$rhost":"$port" >eyefile.txt
@@ -315,20 +317,24 @@ Web_Proxy_Scan() {
 
 dns_enum() {
     cwd=$(pwd)
-    dig -x $rhost | dig-$rhost-output.txt
+    dig -x $rhost | tee dig-$rhost-$port.txt
     cat sslscan-$rhost-$port.log | grep "Subject" | awk '{print $2}' >domain.txt
     domainName=$(grep "Subject" sslscan-$rhost-$port.log | awk '{print $2}')
-    wildcards=('*' '?' '|')
-    for wildcard in "${wildcards[@]}"; do
-        if [[ $domainName == *"${wildcard}"* ]]; then
-            domainNoWildcard=$(echo "${domainName#'*.'}")
-            echo -e "${DOPE} Removing wildcard from $domainName .. Setting domain to $domainNoWildcard"
-            unset domainName
-            domainName="$domainNoWildcard"
-        else
-            :
-        fi
-    done
+    if [[ -s domain.txt ]]; then
+        wildcards=('*' '?' '|')
+        for wildcard in "${wildcards[@]}"; do
+            if [[ $domainName == *"${wildcard}"* ]]; then
+                domainNoWildcard=$(echo "${domainName#'*.'}")
+                echo -e "${DOPE} Removing wildcard from $domainName .. Setting domain to $domainNoWildcard"
+                unset domainName
+                domainName="$domainNoWildcard"
+            else
+                :
+            fi
+        done
+    else
+        :
+    fi
     if [[ -s domain.txt ]] && [[ -n $domainName ]] && [[ $domainName != "localhost" ]]; then
         set -- $domainName
         echo -e "${DOPE} Target has domain: $domainName"
@@ -446,8 +452,9 @@ Enum_Web_SSL() {
             cd - &>/dev/null
             echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
             gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
-            echo -e "${DOPE} nikto -h https://$rhost:$port -output niktoscan-$rhost-$port.txt"
-            nikto -ask=no -host https://$rhost:$port -ssl -output niktoscan-$rhost-$port.txt
+            echo -e "${DOPE} Running nikto as a background process to speed things up"
+            echo -e "${DOPE} nikto -ask=no -host https://$rhost:$port -ssl >> niktoscan-$rhost-$port.txt 2>&1 &"
+            nikto -ask=no -host https://$rhost:$port -ssl >>niktoscan-$rhost-$port.txt 2>&1 &
             # uniscan -u https://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u https://$rhost:$port -qweds"
@@ -684,7 +691,9 @@ dnsCheckHTB() {
             if [[ -n $htbdomain ]]; then
                 if grep -q "$rhost" /etc/hosts; then
                     if grep -q "$htbdomain" /etc/hosts; then
-                        echo -e "$htbdomain already in hosts file"
+                        :
+                    elif [[ $rhost == 127.0.0.1 ]]; then
+                        :
                     else
                         echo -e "adding $htbdomain to hosts file"
                         sed -i $"/$rhost/ s/$/\t$htbdomain/" /etc/hosts
@@ -705,7 +714,7 @@ dnsCheckHTB() {
                 if [[ -n $htbsourcedomain ]]; then
                     if grep -q "$rhost" /etc/hosts; then
                         if grep -q "$htbsourcedomain" /etc/hosts; then
-                            echo -e "$htbsourcedomain already in hosts file"
+                            :
                         else
                             echo -e "adding $htbsourcedomain to hosts file"
                             sed -i $"/$rhost/ s/$/\t$htbsourcedomain/" /etc/hosts
@@ -733,20 +742,16 @@ dnsCheckHTB() {
                 done
             done
             htbdomains2=$(cat htbdomainslist.txt | sort -u)
-            for htbdomain2 in $htbdomains2; do
-                dig -x $rhost
-                dig axfr @$rhost $htbdomain2
-                echo -e "${DOPE} Running: Dnsrecon ${DOPE} dnsrecon -d $htbdomain2"
-                dnsrecon -d $htbdomain2 | tee dnsrecon-$rhost-$htbdomain2.log
-                echo -e "${DOPE} Running: Sublist3r ${DOPE} python3 sublist3r.py -d $htbdomain2 -o $reconDir/subdomains-$rhost-$htbdomain2.log"
-                reconDir=$(echo $cwd)
-                cd /opt/Sublist3r && python3 sublist3r.py -d $htbdomain2 -o $reconDir/subdomains-$rhost-$htbdomain2.log
-                cd - &>/dev/null
-                echo -e "${DOPE} Manual Command to Run: wfuzz ${DOPE} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" "
-                # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
-                subfinder -d $htbdomain2 -o "$htbdomain2"-subfinder.log
-                break
-            done
+            if [[ -s htbdomainslist.txt ]]; then
+                for htbdomain2 in $htbdomains2; do
+                    dig -x $rhost | tee dig-$rhost.log
+                    dig axfr @$rhost $htbdomain2 | tee dig-zone-xfer-$htbdomain2.log
+                    echo -e "${DOPE} Running: Dnsrecon ${DOPE} dnsrecon -d $htbdomain2"
+                    dnsrecon -d $htbdomain2 | tee dnsrecon-$rhost-$htbdomain2.log
+                    echo -e "${DOPE} Manual Command to Run: wfuzz ${DOPE} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H 'Host: FUZZ.$htbdomain2' "
+                    # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
+                done
+            fi
         fi
         if [[ -s htbdomainslist.txt ]]; then
             urldomains=$(cat htbdomainslist.txt)
@@ -755,10 +760,57 @@ dnsCheckHTB() {
                 echo "https://$urldomain:$port1" | tee -a aquaurls.txt
             done
         fi
+        if [[ -s aquaurls.txt ]]; then
+            cat aquaurls.txt | sort -u | aquatone -ports $port1 -out dns_aquatone_$port1
+        fi
     done
-    if [[ -s aquaurls.txt ]]; then
-        cat aquaurls.txt | sort -u | aquatone -out dns_aquatone
-    fi
+    portfilenameSSL2=openportsSSL-$rhost.txt
+    # echo $portfilenameSSL
+    httpPortsLinesSSL2=$(cat $portfilenameSSL2)
+    cwd=$(pwd)
+    for sslport in $httpPortsLinesSSL2; do
+        echo -e "${DOPE} Checking for Client Cert ${DOPE} openssl s_client -connect $rhost:$sslport"
+        openssl s_client -connect $rhost:$port >opensslClient-$rhost-$sslport.log 2>/dev/null
+        if [[ -s opensslClient-$rhost-$sslport.log ]]; then
+            sed -n -e 's/^.*CN = //p' opensslClient-$rhost-$sslport.log >/tmp/CN_INFO_$sslport.log
+            sed -n -e 's/^.*= //p' /tmp/CN_INFO_$sslport.log >emails_$sslport.txt
+            cat /tmp/CN_INFO_$sslport.log | awk '{print $1}' | sort -u >/tmp/possibleHtbDomain.txt
+            if [[ -s /tmp/possibleHtbDomain.txt ]]; then
+                possibleHtbDomain=$(cat /tmp/possibleHtbDomain.txt | grep -i ".htb")
+                for line in $possibleHtbDomain; do
+                    getPossibleHtbDomain=$(echo $line)
+                    removeComma=$(echo "${getPossibleHtbDomain::-1}")
+                    echo $removeComma >>/tmp/HTB_DOMAIN.txt
+                done
+                if [[ -s /tmp/HTB_DOMAIN.txt ]]; then
+                    cat /tmp/HTB_DOMAIN.txt | sort -u >/tmp/sortedHTBDOMAINS.txt
+                fi
+                if [[ -s /tmp/sortedHTBDOMAINS.txt ]]; then
+                    shtbdomainsfileloop=$(cat /tmp/sortedHTBDOMAINS.txt)
+                    for dns in $shtbdomainsfileloop; do
+                        if grep -q $rhost /etc/hosts; then
+                            if grep -q $dns /etc/hosts; then
+                                :
+                            else
+                                echo -e "adding $dns to hosts file"
+                                sed -i $"/$rhost/ s/$/\t$dns/" /etc/hosts
+                            fi
+                        else
+                            echo -e "${DOPE} Adding $dns to /etc/hosts file"
+                            sed -i $"3i$rhost\t$dns" /etc/hosts
+                        fi
+                        echo -e "${DOPE} dig axfr @$rhost $dns"
+                        dig axfr @$rhost $dns
+                        echo -e "${DOPE} dnsrecon -d $dns"
+                        dnsrecon -d $dns | tee dnsrecon-$rhost-$dns.log
+                        echo -e "${MANUALCMD} Manual Command to Run:"
+                        echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $dns -H 'Host: FUZZ.$dns' "
+                    done
+                fi
+            fi
+        fi
+    done
+
 }
 
 screenshotWEB() {
@@ -913,11 +965,13 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "gowitness.db" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "aquaurls.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "emails*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
-
+        find $cwd/$rhost-report/ -type f -size 0 -exec rm -f {} \;
+        find $cwd/ -type f -size 0 -exec rm -f {} \;
     else
         mkdir -p $rhost-report
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
@@ -950,38 +1004,41 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "gowitness.db" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "aquaurls.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "emails*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/$rhost-report/ -type f -size 0 -exec rm -f {} \;
+        find $cwd/ -type f -size 0 -exec rm -f {} \;
     fi
 
 }
 
 show_Version() {
     cat <<"EOF"
-@@@  @@@  @@@@@@@@  @@@@@@@    @@@@@@   @@@   @@@@@@   @@@  @@@  
-@@@  @@@  @@@@@@@@  @@@@@@@@  @@@@@@@   @@@  @@@@@@@@  @@@@ @@@  
-@@!  @@@  @@!       @@!  @@@  !@@       @@!  @@!  @@@  @@!@!@@@  
-!@!  @!@  !@!       !@!  @!@  !@!       !@!  !@!  @!@  !@!!@!@!  
-@!@  !@!  @!!!:!    @!@!!@!   !!@@!!    !!@  @!@  !@!  @!@ !!@!  
-!@!  !!!  !!!!!:    !!@!@!     !!@!!!   !!!  !@!  !!!  !@!  !!!  
-:!:  !!:  !!:       !!: :!!        !:!  !!:  !!:  !!!  !!:  !!!  
- ::!!:!   :!:       :!:  !:!      !:!   :!:  :!:  !:!  :!:  !:!  
-  ::::     :: ::::  ::   :::  :::: ::    ::  ::::: ::   ::   ::  
-   :      : :: ::    :   : :  :: : :    :     : :  :   ::    :   
-                                                                 
-                                              
-     @@@         @@@@@@@@      @@@  @@@  @@@  
-    @@@@        @@@@@@@@@@     @@@  @@@  @@@  
-   @@!@!        @@!   @@@@     @@!  @@!  @@!  
-  !@!!@!        !@!  @!@!@     !@   !@   !@   
- @!! @!!        @!@ @! !@!     @!@  @!@  @!@  
-!!!  !@!        !@!!!  !!!     !!!  !!!  !!!  
-:!!:!:!!:       !!:!   !!!                    
-!:::!!:::  :!:  :!:    !:!     :!:  :!:  :!:  
-     :::   :::  ::::::: ::      ::   ::   ::  
-     :::   :::   : : :  :      :::  :::  :::  
+@@@  @@@  @@@@@@@@  @@@@@@@    @@@@@@   @@@   @@@@@@   @@@  @@@
+@@@  @@@  @@@@@@@@  @@@@@@@@  @@@@@@@   @@@  @@@@@@@@  @@@@ @@@
+@@!  @@@  @@!       @@!  @@@  !@@       @@!  @@!  @@@  @@!@!@@@
+!@!  @!@  !@!       !@!  @!@  !@!       !@!  !@!  @!@  !@!!@!@!
+@!@  !@!  @!!!:!    @!@!!@!   !!@@!!    !!@  @!@  !@!  @!@ !!@!
+!@!  !!!  !!!!!:    !!@!@!     !!@!!!   !!!  !@!  !!!  !@!  !!!
+:!:  !!:  !!:       !!: :!!        !:!  !!:  !!:  !!!  !!:  !!!
+ ::!!:!   :!:       :!:  !:!      !:!   :!:  :!:  !:!  :!:  !:!
+  ::::     :: ::::  ::   :::  :::: ::    ::  ::::: ::   ::   ::
+   :      : :: ::    :   : :  :: : :    :     : :  :   ::    :
+
+
+     @@@         @@@@@@@@      @@@  @@@  @@@
+    @@@@        @@@@@@@@@@     @@@  @@@  @@@
+   @@!@!        @@!   @@@@     @@!  @@!  @@!
+  !@!!@!        !@!  @!@!@     !@   !@   !@
+ @!! @!!        @!@ @! !@!     @!@  @!@  @!@
+!!!  !@!        !@!!!  !!!     !!!  !!!  !!!
+:!!:!:!!:       !!:!   !!!
+!:::!!:::  :!:  :!:    !:!     :!:  :!:  :!:
+     :::   :::  ::::::: ::      ::   ::   ::
+     :::   :::   : : :  :      :::  :::  :::
 
 EOF
 }
@@ -1280,3 +1337,4 @@ traperr() {
 
 set -o errtrace
 trap traperr ERR
+
