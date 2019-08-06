@@ -822,7 +822,7 @@ dnsCheckHTB() {
 screenshotWEB() {
     cwd=$(pwd)
     if [[ $(grep -E 'http|BaseHTTPServer' top-open-services.txt | grep -v "proxy") ]]; then
-        cat dirsearch* | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >screenshot-URLS.txt
+        cat dirsearch* | grep -v "400" | awk '{print $3}' | sort -u >screenshot-URLS.txt
         if [[ -s screenshot-URLS.txt ]]; then
             urlPorts=$(cat openports-web-$rhost.txt | tr '\n' ',')
             formattedUrlPorts=$(echo "${urlPorts::-1}")
@@ -835,7 +835,7 @@ screenshotWEB() {
 screenshotWEBSSL() {
     cwd=$(pwd)
     if [[ $(grep -E 'ssl/http|ssl/unknown|https' top-open-services.txt | grep -v "proxy") ]]; then
-        cat SSL-dirsearch*.txt | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >screenshot-SSL-URLS.txt
+        cat SSL-dirsearch*.txt | grep -v "400" | awk '{print $3}' | sort -u >screenshot-SSL-URLS.txt
         if [[ -s screenshot-SSL-URLS.txt ]]; then
             mkdir -p ScreenshotsSSL
             urlSSLPorts=$(cat openportsSSL-$rhost.txt | tr '\n' ',')
