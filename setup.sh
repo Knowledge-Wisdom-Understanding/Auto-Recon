@@ -71,6 +71,7 @@ go get github.com/subfinder/subfinder
 
 echo -e "${DOPE} Installing snmp-mibs-downloader. This will beautify snmp-walk output to more human readable format"
 apt install snmp-mibs-downloader -y
+sed -e '/mibs/ s/^#*/#/' -i /etc/snmp/snmp.conf
 
 cd /opt
 cd Auto-Recon
