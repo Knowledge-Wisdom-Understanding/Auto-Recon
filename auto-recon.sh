@@ -126,6 +126,7 @@ Enum_Web() {
         fi
         for port in $httpPortsLines; do
             wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
+            wordlist3="/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt"
             # wordlist2="/usr/share/seclists/Discovery/Web-Content/common.txt"
             echo -e "${DOPE} Running The Following Commands"
             # echo -e "${DOPE} gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
@@ -143,8 +144,8 @@ Enum_Web() {
             curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
             # gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null
             echo -e "${DOPE} Running nikto as a background process to speed things up."
-            echo -e "${DOPE} nikto -ask=no -host http://$rhost:$port >> niktoscan-$rhost-$port.txt 2>&1 &"
-            nikto -ask=no -host http://$rhost:$port >>niktoscan-$rhost-$port.txt 2>&1 &
+            echo -e "${DOPE} nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &"
+            nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &
             ####################################################################################
             mkdir -p eyewitness-report-"$rhost"-"$port" && cd /opt/EyeWitness
             echo http://"$rhost":"$port" >eyefile.txt
@@ -152,8 +153,10 @@ Enum_Web() {
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             ##################################################################################
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak -x 403 --plain-text-report dirsearch-$rhost-$port.log"
-            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html,json,cnf,bak,tar,gz -x 403 --plain-text-report dirsearch-$rhost-$port.log
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html-x 403 --plain-text-report dirsearch-$rhost-$port.log"
+            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report dirsearch-$rhost-$port.log
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log"
+            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
@@ -428,6 +431,7 @@ Enum_Web_SSL() {
             set -- $port
             wordlist="/usr/share/seclists/Discovery/Web-Content/common.txt"
             wordlist2="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
+            wordlist4="/usr/share/wordlists/dirbuster/directory-list-2.3-small.txt"
             echo -e "${DOPE} Running The Following Commands"
             echo -e "${DOPE} sslscan https://$rhost:$port | tee sslscan-$rhost-$port.log"
             sslscan https://$rhost:$port | tee sslscan-color-$rhost-$port.log
@@ -450,11 +454,13 @@ Enum_Web_SSL() {
             echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port"
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
-            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt"
-            gobuster dir -u https://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt,.js -e -k -o gobuster-$rhost-$port.txt
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log"
+            python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log"
+            python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist4 -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log
             echo -e "${DOPE} Running nikto as a background process to speed things up"
-            echo -e "${DOPE} nikto -ask=no -host https://$rhost:$port -ssl >> niktoscan-$rhost-$port.txt 2>&1 &"
-            nikto -ask=no -host https://$rhost:$port -ssl >>niktoscan-$rhost-$port.txt 2>&1 &
+            echo -e "${DOPE} nikto -ask=no -host https://$rhost:$port -ssl >niktoscan-$rhost-$port.txt 2>&1 &"
+            nikto -ask=no -host https://$rhost:$port -ssl >niktoscan-$rhost-$port.txt 2>&1 &
             # uniscan -u https://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${DOPE} uniscan -u https://$rhost:$port -qweds"
@@ -800,7 +806,7 @@ dnsCheckHTB() {
                             sed -i $"3i$rhost\t$dns" /etc/hosts
                         fi
                         echo -e "${DOPE} dig axfr @$rhost $dns"
-                        dig axfr @$rhost $dns
+                        dig axfr @$rhost $dns | tee dig-axfr-$dns.log
                         echo -e "${DOPE} dnsrecon -d $dns"
                         dnsrecon -d $dns | tee dnsrecon-$rhost-$dns.log
                         echo -e "${MANUALCMD} Manual Command to Run:"
@@ -829,7 +835,7 @@ screenshotWEB() {
 screenshotWEBSSL() {
     cwd=$(pwd)
     if [[ $(grep -E 'ssl/http|ssl/unknown|https' top-open-services.txt | grep -v "proxy") ]]; then
-        cat gobuster*.txt | grep -Ev "500|403|400|401|503" | awk '{print $1}' | sort -u >screenshot-SSL-URLS.txt
+        cat SSL-dirsearch*.txt | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >screenshot-SSL-URLS.txt
         if [[ -s screenshot-SSL-URLS.txt ]]; then
             mkdir -p ScreenshotsSSL
             urlSSLPorts=$(cat openportsSSL-$rhost.txt | tr '\n' ',')
