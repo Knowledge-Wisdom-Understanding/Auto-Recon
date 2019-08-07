@@ -272,8 +272,10 @@ Web_Proxy_Scan() {
                 echo -e "${DOPE} whatweb -v -a 3 --proxy $rhost:$proxyPort http://127.0.0.1:$webPort/"
                 whatweb -v -a 3 --proxy $rhost:$proxyPort http://127.0.0.1:$webPort/ | tee whatweb-color-proxy-$rhost-$webPort.log
                 sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-proxy-$rhost-$webPort.log >whatweb-proxy-$rhost-$webPort.log && rm whatweb-color-proxy-$rhost-$webPort.log
-                echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ --plain-text-report proxy-crawl-$rhost-$webPort-$proxyPort.log"
-                python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt,json,cnf,bak,js -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ -w /usr/share/wordlists/dirb/big.txt --plain-text-report proxy-big-crawl-$rhost-$webPort-$proxyPort.log
+                echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ --plain-text-report proxy-default-crawl-$rhost-$webPort-$proxyPort.log"
+                python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,txt -f -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ --plain-text-report proxy-default-crawl-$rhost-$webPort-$proxyPort.log
+                echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt --plain-text-report proxy-dlistsmall-$rhost-$webPort-$proxyPort.log"
+                python3 /opt/dirsearch/dirsearch.py -e php,asp,aspx,html,txt -x 403 -t 50 --proxy $rhost:$proxyPort -u http://127.0.0.1:$webPort/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt --plain-text-report proxy-dlistsmall-$rhost-$webPort-$proxyPort.log
                 echo -e "${DOPE} nikto -ask=no -host http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$rhost-$webPort-scan.txt"
                 nikto -ask=no -host http://127.0.0.1:$webPort/ -useproxy http://$rhost:$proxyPort/ -output nikto-$rhost-$webPort-scan.txt
                 wp3=$(grep -i "wordpress" proxy-big-crawl-$rhost-$webPort-$proxyPort.log)
@@ -309,7 +311,7 @@ Web_Proxy_Scan() {
                     :
                 fi
             done
-            cat proxy-big-crawl-*.log | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >snProxyURLs.txt
+            cat proxy*.log | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >snProxyURLs.txt
             urlProxyPorts=$(cat http-proxy-ports-$rhost.txt | tr '\n' ',')
             formattedUrlProxyPorts=$(echo "${urlProxyPorts::-1}")
             cat snProxyURLs.txt | aquatone -ports $formattedUrlProxyPorts -proxy http://$rhost:$proxyPort -out proxy_aquatone
@@ -455,7 +457,7 @@ Enum_Web_SSL() {
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log"
-            python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log
+            python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt -f -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist4 -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log
             echo -e "${DOPE} Running nikto as a background process to speed things up"
