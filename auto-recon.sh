@@ -153,8 +153,8 @@ Enum_Web() {
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             ##################################################################################
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html-x 403 --plain-text-report dirsearch-$rhost-$port.log"
-            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 -f --plain-text-report dirsearch-$rhost-$port.log
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt-x 403 --plain-text-report dirsearch-$rhost-$port.log"
+            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt -x 403 -f --plain-text-report dirsearch-$rhost-$port.log
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log
             # uniscan -u http://$rhost:$port -qweds
