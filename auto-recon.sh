@@ -944,16 +944,16 @@ dnsCheckHTB() {
                     for line in $possibleHtbDomain; do
                         getPossibleHtbDomain=$(echo $line)
                         removeComma=$(echo "${getPossibleHtbDomain::-1}")
-                        echo $removeComma >>/tmp/HTB_DOMAIN.txt
+                        echo $removeComma >>/tmp/HTB_DOMAIN-$rhost.txt
                     done
                 fi
             fi
         done
-        if [[ -s /tmp/HTB_DOMAIN.txt ]]; then
-            cat /tmp/HTB_DOMAIN.txt | sort -u >/tmp/sortedHTBDOMAINS.txt
+        if [[ -s /tmp/HTB_DOMAIN-$rhost.txt ]]; then
+            cat /tmp/HTB_DOMAIN-$rhost.txt | sort -u >/tmp/sortedHTBDOMAINS-$rhost.txt
         fi
-        if [[ -s /tmp/sortedHTBDOMAINS.txt ]]; then
-            sorthtbdomainsfileloop=$(cat /tmp/sortedHTBDOMAINS.txt)
+        if [[ -s /tmp/sortedHTBDOMAINS-$rhost.txt ]]; then
+            sorthtbdomainsfileloop=$(cat /tmp/sortedHTBDOMAINS-$rhost.txt)
             for dns in $sorthtbdomainsfileloop; do
                 if grep -q $rhost /etc/hosts; then
                     if grep -q $dns /etc/hosts; then
