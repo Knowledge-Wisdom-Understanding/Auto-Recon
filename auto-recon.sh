@@ -57,6 +57,8 @@ else
     rhost=${arg[1]}
 fi
 
+SECONDS=0
+
 validate_IP() {
     if [[ $rhost =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
         :
@@ -96,6 +98,22 @@ Open_Ports_Scan() {
         fi
     }
     create_wordlists_dir
+    create_manual_dir() {
+        if [ -d manual-commands ]; then
+            :
+        else
+            mkdir -p manual-commands
+        fi
+    }
+    create_manual_dir
+    create_web_dir() {
+        if [ -d WEB ]; then
+            :
+        else
+            mkdir -p WEB
+        fi
+    }
+    create_web_dir
     nmap -vv -Pn -sV -T3 --max-retries 1 --max-scan-delay 20 --top-ports 10000 -oA nmap/top-ports-$rhost $rhost
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open | cut -d "/" -f 1 >top-open-ports.txt
     grep -v "filtered" nmap/top-ports-$rhost.nmap | grep open >top-open-services.txt
@@ -143,9 +161,6 @@ Enum_Web() {
             echo -e "${DOPE} curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null"
             curl -sSik http://$rhost:$port/robots.txt -m 10 -o robots-$rhost-$port.txt &>/dev/null
             # gobuster dir -u http://$rhost:$port -w $wordlist -l -t 50 -x .html,.php,.asp,.aspx,.txt -e -k -o gobuster-$rhost-$port.txt 2>/dev/null
-            echo -e "${DOPE} Running nikto as a background process to speed things up."
-            echo -e "${DOPE} nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &"
-            nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &
             ####################################################################################
             mkdir -p eyewitness-report-"$rhost"-"$port" && cd /opt/EyeWitness
             echo http://"$rhost":"$port" >eyefile.txt
@@ -157,10 +172,13 @@ Enum_Web() {
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt -x 403 -f --plain-text-report dirsearch-$rhost-$port.log
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log
+            echo -e "${DOPE} Running nikto as a background process to speed things up."
+            echo -e "${DOPE} nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &"
+            nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
-            echo -e "${DOPE} uniscan -u http://$rhost:$port -qweds"
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -e php,asp,aspx,html,txt,js -x 403 -t 80 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log"
+            echo -e "${MANUALCMD} uniscan -u http://$rhost:$port -qweds" | tee -a manual-commands.txt
+            echo -e "${MANUALCMD} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -e php,asp,aspx,html,txt,js -x 403 -t 80 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log" | tee -a manual-commands.txt
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
             if [[ $wp1 ]] || [[ $wp2 ]]; then
@@ -196,6 +214,7 @@ if [[ -n \$(grep -i "User(s) Identified" wpscan-$rhost-$port.log) ]]; then
     fi
 fi
 EOF
+                chmod +x wpBrute.sh
             elif grep -i "Drupal" whatweb-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u http://$rhost -t 32 | tee drupalscan-$rhost-$port.log"
                 droopescan scan drupal -u http://$rhost:$port/ -t 32 | tee drupalscan-$rhost-$port.log
@@ -224,7 +243,7 @@ EOF
                 cd /opt/magescan
                 bin/magescan scan:all http://$rhost:$port/ | tee magento-$rhost-$port.log
                 cd - &>/dev/null
-                echo -e "${DOPE} Consider crawling site: python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$port.log"
+                echo -e "${MANUALCMD} Consider crawling site: python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$port.log" | tee -a manual-commands.txt
             else
                 :
             fi
@@ -322,10 +341,80 @@ Web_Proxy_Scan() {
 
 dns_enum() {
     cwd=$(pwd)
+    echo -e "${DOPE} dig -x $rhost"
     dig -x $rhost | tee dig-$rhost-$port.txt
     cat sslscan-$rhost-$port.log | grep "Subject" | awk '{print $2}' >domain.txt
     domainName=$(grep "Subject" sslscan-$rhost-$port.log | awk '{print $2}')
-    if [[ -s domain.txt ]]; then
+    altDomainNames=$(grep "Altnames" sslscan-$rhost-$port.log | grep "Altnames" | sed 's/, DNS:/ /g' | sed -n -e 's/^.*DNS://p')
+    if [[ -n $altDomainNames ]] && [[ -n $domainName ]]; then
+        echo -e "$domainName $altDomainNames" | tr ' ' '\n' >domains.txt
+        cp -r domains.txt domains.txt.bak
+        allDomains2=$(echo -e "$domainName $altDomainNames" | tr ' ' '\n')
+    fi
+    if [[ -s domain.txt ]] && [[ -s domains.txt ]]; then
+        wildcards=('*' '?' '|')
+        for wildcard in "${wildcards[@]}"; do
+            for dnsname in $allDomains2; do
+                if [[ $dnsname == *"${wildcard}"* ]]; then
+                    domainNoWildcard=$(echo "${dnsname#'*.'}")
+                    sed -i "s/$dnsname/$domainNoWildcard/g" domains.txt
+                else
+                    :
+                fi
+            done
+
+            if [[ $domainName == *"${wildcard}"* ]]; then
+                domainNoWildcard=$(echo "${domainName#'*.'}")
+                echo -e "${DOPE} Removing wildcard from $domainName .. Setting domain to $domainNoWildcard"
+                unset domainName
+                domainName="$domainNoWildcard"
+            else
+                :
+            fi
+        done
+        allDomainsFile=domains.txt
+        loopAllDomainsFile=$(cat $allDomainsFile)
+        for dnsname2 in $loopAllDomainsFile; do
+            if [[ $dnsname2 == "$domainName" ]]; then
+                :
+            elif grep -e "$rhost.*$dnsname2" /etc/hosts; then
+                :
+            elif [[ $rhost == 127.0.0.1 ]]; then
+                :
+            elif ! grep -q "$rhost" /etc/hosts; then
+                sed -i $"3i$rhost\t$domainName" /etc/hosts
+                sed -i "/$domainName/ s/$/ $dnsname2/" /etc/hosts
+            else
+                echo -e "${DOPE} Adding $dnsname2 to /etc/hosts file"
+                sed -i "/$domainName/ s/$/ $dnsname2/" /etc/hosts
+            fi
+        done
+        for dnsname3 in $loopAllDomainsFile; do
+            if [[ $dnsname3 == "$domainName" ]]; then
+                :
+            else
+                echo -e "${MANUALCMD} Creating Manual DNS Enum Bash Script for $dnsname3"
+                cat >enum-$dnsname3.sh <<EOF
+#!/bin/bash
+
+echo -e "${DOPE} whatweb -v -a 3 https://$dnsname3:$port | tee whatweb-color-$dnsname3-$port.log"
+whatweb -v -a 3 https://$dnsname3:$port | tee whatweb-color-$dnsname3-$port.log
+sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-$dnsname3-$port.log >whatweb-ssl-$dnsname3-$port.log && rm whatweb-color-$dnsname3-$port.log
+curl -sSik https://$dnsname3:$port/robots.txt -m 10 -o robots-$dnsname3-$port.txt &>/dev/null
+echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$dnsname3:$port -t 80 -e php,asp,aspx,txt,html -f -x 403 --plain-text-report SSL-dirsearch-$dnsname3-$port.log"
+python3 /opt/dirsearch/dirsearch.py -u https://$dnsname3:$port -t 80 -e php,asp,aspx,txt -f -x 403 --plain-text-report SSL-dirsearch-$dnsname3-$port.log
+echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$dnsname3:$port -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$dnsname3-$port.log"
+python3 /opt/dirsearch/dirsearch.py -u https://$dnsname3:$port -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$dnsname3-$port.log
+echo -e "${DOPE} Running nikto as a background process to speed things up"
+echo -e "${DOPE} nikto -ask=no -host https://$dnsname3:$port -ssl >niktoscan-$dnsname3-$port.txt 2>&1 &"
+nikto -ask=no -host https://$dnsname3:$port -ssl >niktoscan-$dnsname3-$port.txt 2>&1 &
+echo -e "${DOPE} gobuster dns -d $dnsname3 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname3.log"
+gobuster dns -d $dnsname3 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname3.log
+EOF
+                chmod +x enum-$dnsname3.sh
+            fi
+        done
+    elif [[ -s domain.txt ]] && [[ ! -s domains.txt ]]; then
         wildcards=('*' '?' '|')
         for wildcard in "${wildcards[@]}"; do
             if [[ $domainName == *"${wildcard}"* ]]; then
@@ -337,23 +426,22 @@ dns_enum() {
                 :
             fi
         done
-    else
-        :
     fi
     if [[ -s domain.txt ]] && [[ -n $domainName ]] && [[ $domainName != "localhost" ]]; then
         set -- $domainName
         echo -e "${DOPE} Target has domain: $domainName"
         echo -e "${DOPE} Creating backup of /etc/hosts file in $cwd"
         cat /etc/hosts >etc-hosts-backup2.txt
-        if grep -q $"$rhost\t$domainName" /etc/hosts; then
+        if [[ $rhost == 127.0.0.1 ]]; then
             :
-        elif [[ $rhost == 127.0.0.1 ]]; then
+        elif grep -e "$rhost.*$domainName" /etc/hosts; then
             :
         else
             echo -e "${DOPE} Adding $domainName to /etc/hosts file"
             sed -i $"3i$rhost\t$domainName" /etc/hosts
         fi
         echo -e "${DOPE} Checking for Zone Transfer on $rhost:$port $domainName"
+        echo -e "${DOPE} dig axfr @$rhost $domainName"
         dig axfr @$rhost $domainName | tee zone-transfer-$rhost-$port-$domainName.txt
         if grep -q "$domainName" zone-transfer-$rhost-$port-$domainName.txt; then
             grep -v ";" zone-transfer-$rhost-$port-$domainName.txt | grep -v -e '^[[:space:]]*$' >filtered-zone-transfer-$rhost-$port-$domainName.txt
@@ -386,7 +474,7 @@ dns_enum() {
             for url in $loopUrlsList; do
                 if [[ $url == *".htb" ]]; then
                     echo "${DOPE} found .htb domain: $url "
-                    if grep -q $"$rhost\t$domainName" /etc/hosts; then
+                    if grep -e "$rhost.*$domainName" /etc/hosts; then
                         if grep -q "$url" /etc/hosts; then
                             :
                         else
@@ -403,16 +491,28 @@ dns_enum() {
             echo -e "${YELLOW}#################################################################################################### ${END}"
             cat /etc/hosts
         fi
-        echo -e "${DOPE} Running Dnsrecon ${DOPE} dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log"
-        dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log
-        reconDir=$(echo $cwd)
-        echo -e "${DOPE} Running sublist3r ${DOPE} sublist3r.py -d $domainName -o $reconDir/subdomains-$rhost-$port-$domainName.log"
-        cd /opt/Sublist3r && python3 sublist3r.py -d $domainName -o $reconDir/subdomains-$rhost-$port-$domainName.log
-        cd - &>/dev/null
-        echo -e "${DOPE} Running subfinder ${DOPE} subfinder -d $domainName -o "$domainName"-subfinder.log"
-        subfinder -d $domainName -o "$domainName"-subfinder.log
-        echo -e "${DOPE} Running gobuster ${DOPE} gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log"
-        gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log
+        if [[ $domainName == *".htb"* ]]; then
+            if [[ $(grep "domain" top-open-services.txt) ]] || [[ $(grep -w "53" top-open-ports.txt) ]]; then
+                echo -e "${DOPE} dnsrecon -d $domainName -n $rhost -a"
+                dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log
+            fi
+            echo -e "${DOPE} gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log"
+            gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log
+            echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $domainName -H 'Host: FUZZ.$domainName' " | tee -a manual-commands.txt
+            # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $domainName -H "Host: FUZZ.$domainName" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$domainName.txt
+        else
+            echo -e "${DOPE} Running DNS Enumeration on $domainName"
+            echo -e "${DOPE} dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log"
+            dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log
+            reconDir=$(echo $cwd)
+            echo -e "${DOPE} sublist3r.py -d $domainName -o $reconDir/subdomains-$rhost-$port-$domainName.log"
+            cd /opt/Sublist3r && python3 sublist3r.py -d $domainName -o $reconDir/subdomains-$rhost-$port-$domainName.log
+            cd - &>/dev/null
+            echo -e "${DOPE} subfinder -d $domainName -o "$domainName"-subfinder.log"
+            subfinder -d $domainName -o "$domainName"-subfinder.log
+            echo -e "${DOPE} gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log"
+            gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log
+        fi
     fi
     if [[ -n "$domainName" ]] && [[ $domainName != "localhost" ]]; then
         unset rhost
@@ -456,17 +556,17 @@ Enum_Web_SSL() {
             echo -e "${DOPE} ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port"
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log"
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -f -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt -f -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log"
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist4 -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log
             echo -e "${DOPE} Running nikto as a background process to speed things up"
             echo -e "${DOPE} nikto -ask=no -host https://$rhost:$port -ssl >niktoscan-$rhost-$port.txt 2>&1 &"
             nikto -ask=no -host https://$rhost:$port -ssl >niktoscan-$rhost-$port.txt 2>&1 &
             # uniscan -u https://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
-            echo -e "${DOPE} uniscan -u https://$rhost:$port -qweds"
-            echo -e "${DOPE} gobuster dir -u https://$rhost:$port -w $wordlist2 -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k | tee gobuster-$rhost-$port.txt"
+            echo -e "${MANUALCMD} uniscan -u https://$rhost:$port -qweds" | tee -a manual-commands.txt
+            echo -e "${MANUALCMD} gobuster dir -u https://$rhost:$port -w $wordlist2 -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k" | tee -a manual-commands.txt
 
             if [ $(grep -i "WordPress" whatweb-ssl-$rhost-$port.log 2>/dev/null) ]; then
                 echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log"
@@ -502,6 +602,7 @@ if [[ -n \$(grep -i "User(s) Identified" wpscan2-$rhost-$port.log) ]]; then
     fi
 fi
 EOF
+                chmod +x wordpressBrute.sh
             elif grep -i "Drupal" whatweb-ssl-$rhost-$port.log 2>/dev/null; then
                 echo -e "${DOPE} Found Drupal! Running droopescan scan drupal -u https://$rhost -t 32 | tee drupalscan-$rhost-$port.log"
                 droopescan scan drupal -u https://$rhost:$port/ -t 32 | tee -a drupalscan.log
@@ -530,6 +631,17 @@ EOF
         else
             :
         fi
+        if [[ -s domains.txt ]]; then
+            urldomains2=$(cat domains.txt)
+            for urldomain2 in $urldomains2; do
+                echo "https://$urldomain2" >>aquaurls2.txt
+            done
+        fi
+        if [[ -s aquaurls2.txt ]]; then
+            urlSSLPorts2=$(cat openportsSSL-$rhost.txt | tr '\n' ',')
+            formattedSSLUrlPorts2=$(echo "${urlSSLPorts2::-1}")
+            cat aquaurls2.txt | sort -u | aquatone -ports $formattedSSLUrlPorts2 -out dns_aquatone
+        fi
     fi
 }
 
@@ -546,17 +658,47 @@ ftp_scan() {
     fi
 }
 
+smtp_enum() {
+    grep -i "smtp" top-open-services.txt | cut -d "/" -f 1 >openportsSMTP-$rhost.txt
+    portfilenameSMTP=openportsSMTP-$rhost.txt
+    # echo $portfilenameSSL
+    PortsLinesSMTP=$(cat $portfilenameSMTP)
+    if [[ -s openportsSMTP-$rhost.txt ]]; then
+        for smtp_port in $PortsLinesSMTP; do
+            echo -e "${DOPE} Found SMTP! ENUMERATING USERS"
+            echo -e "${DOPE} smtp-user-enum -M VRFY -U /usr/share/metasploit-framework/data/wordlists/unix_users.txt -t $rhost -p $smtp_port 2>&1 | tee smtp-users-$rhost-$smtp_port.log"
+            smtp-user-enum -M VRFY -U /usr/share/metasploit-framework/data/wordlists/unix_users.txt -t $rhost -p $smtp_port 2>&1 | tee smtp-users-$rhost-$smtp_port.log
+        done
+    fi
+}
+
+rpc_enum() {
+    if [[ $(grep -E "msrpc|rpcbind|erpc" top-open-services.txt) ]]; then
+        if [[ ! -s smb-scan-$rhost.log ]]; then
+            echo -e "${DOPE} Found RPC!" | tee -a rpc-color-scan-$rhost.log
+            echo -e "${DOPE} enum4linux -av $rhost" | tee -a rpc-color-scan-$rhost.log
+            enum4linux -av $rhost | tee -a rpc-color-scan-$rhost.log
+            sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" rpc-color-scan-$rhost.log >rpc-scan-$rhost.log
+            rm rpc-color-scan-$rhost.log
+        fi
+    fi
+}
+
 ldap_enum() {
     if [[ $(grep -w "ldap" top-open-services.txt) ]] || [[ $(grep -w "389" top-open-ports.txt) ]]; then
-        echo -e "${DOPE} Found LDAP! Running Enum4Linux"
-        enum4linux -a -l -v $rhost | tee ldapenum-$rhost.txt
+        if [[ ! -s smb-scan-$rhost.log ]]; then
+            echo -e "${DOPE} Found LDAP! Running Enum4Linux"
+            enum4linux -a -l -v $rhost | tee ldapenum-$rhost.txt
+        fi
     fi
     if ! grep -q "389" top-open-ports.txt; then
         grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan2-$rhost.txt
         if grep -q "137" udp-scan2-$rhost.txt; then
-            echo -e "${DOPE} Found LDAP UDP port! Running Enum4Linux"
-            enum4linux -a -M -l -d $rhost | tee ldapenum-$rhost.txt
-            rm udp-scan2-$rhost.txt
+            if [[ ! -s smb-scan-$rhost.log ]]; then
+                echo -e "${DOPE} Found LDAP UDP port! Running Enum4Linux"
+                enum4linux -a -M -l -d $rhost | tee ldapenum-$rhost.txt
+                rm udp-scan2-$rhost.txt
+            fi
         else
             rm udp-scan2-$rhost.txt
         fi
@@ -603,6 +745,7 @@ Intense_Nmap_UDP_Scan() {
 
 Enum_SMB() {
     if [[ $(grep -i "netbios-ssn" top-open-services.txt) ]] || [[ $(grep -i "microsoft-ds" top-open-services.txt) ]]; then
+        echo -e "${DOPE} Found Samba!" | tee -a smb-color-scan-$rhost.log
         echo -e "${DOPE} Running SMBCLIENT, Checking shares" | tee -a smb-color-scan-$rhost.log
         echo -e "${DOPE} smbclient -L //$rhost -U 'guest'%" | tee -a smb-color-scan-$rhost.log
         smbclient -L //$rhost -U "guest"% | tee -a smb-color-scan-$rhost.log
@@ -684,7 +827,7 @@ FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     cwd=$(pwd)
     echo -e "${DOPE} Running Full Nmap TCP port Scan"
     echo -e "${DOPE} nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost"
-    nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost
+    nmap -vv -Pn -A -p- -T4 --script-timeout 10 -oA nmap/full-tcp-scan-$rhost $rhost
     echo -e "${YELLOW}#################################################################################################### ${END}"
     echo -e "${TEAL}########################### Checking Vulnerabilities  ############################################## ${END}"
     echo -e "${YELLOW}#################################################################################################### ${END}"
@@ -694,13 +837,16 @@ FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
 
 dnsCheckHTB() {
     if grep -q ".htb" nmap/full-tcp-scan-$rhost.nmap; then
-        htbdomains=$(grep ".htb" nmap/full-tcp-scan-"$rhost".nmap | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/" | rev | cut -d " " -f 1 | rev | grep "htb" | sort -u)
-        for htbdomain in $htbdomains; do
-            if [[ -n $htbdomain ]]; then
+        htbdomains=$(grep ".htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*commonName=//p" | cut -d "/" -f 1 | sort -u)
+        htbdomains2=$(grep ".htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*Name: //p" | sort -u)
+        htbdomains3=$(grep "htb" nmap/full-tcp-scan-"$rhost".nmap | sed 's/^.*| Subject Alternative Name: //p' | sed 's/, DNS:/ /g' | sed -n -e 's/^.*DNS://p' | sort -u)
+        htbdomains4=$(echo -e "$htbdomains\n$htbdomains2\n$htbdomains3" | grep -v "DNS:" | tr ' ' '\n')
+        for htbdomain in $htbdomains4; do
+            if [[ -n $htbdomain ]] && [[ $htbdomain == *"htb"* ]]; then
                 if grep -q "$rhost" /etc/hosts; then
-                    if grep -q "$htbdomain" /etc/hosts; then
+                    if [[ $rhost == 127.0.0.1 ]]; then
                         :
-                    elif [[ $rhost == 127.0.0.1 ]]; then
+                    elif grep -e "$rhost.*$htbdomain" /etc/hosts; then
                         :
                     else
                         echo -e "adding $htbdomain to hosts file"
@@ -714,122 +860,138 @@ dnsCheckHTB() {
     fi
     portfilename=httpports-$rhost.txt
     httpPortsLines2=$(cat $portfilename)
-    for port1 in $httpPortsLines2; do
-        curl -sSik http://$rhost:$port1 -m 10 -o homepage-source2.html &>/dev/null
-        if grep -q ".htb" homepage-source2.html; then
-            htbsourcedomains=$(grep '.htb' homepage-source2.html | tr ' ' '\n' | grep ".htb" | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/" | sort -u)
-            for htbsourcedomain in $htbsourcedomains; do
-                if [[ -n $htbsourcedomain ]]; then
-                    if grep -q "$rhost" /etc/hosts; then
-                        if grep -q "$htbsourcedomain" /etc/hosts; then
-                            :
-                        else
-                            echo -e "adding $htbsourcedomain to hosts file"
-                            sed -i $"/$rhost/ s/$/\t$htbsourcedomain/" /etc/hosts
-                        fi
-                    else
-                        sed -i $"3i$rhost\t$htbsourcedomain" /etc/hosts
-                    fi
-                fi
-            done
-        fi
-        if [[ $rhost == 127.0.0.1 ]]; then
-            :
-        elif grep -q "$rhost" /etc/hosts; then
-            htbdomains3=$(grep $rhost /etc/hosts | awk '{$1= ""; print $0}')
-            remwildcardDomains=$(echo $htbdomains3 | tr ' ' '\n')
-            for wcDomain in $remwildcardDomains; do
-                wildcards=('*' '?' '|')
-                for wildcard in "${wildcards[@]}"; do
-                    if [[ $wcDomain == *"${wildcard}"* ]]; then
-                        :
-                    else
-                        domainNoWildcard2=$(echo "${wcDomain#'*.'}")
-                        echo $domainNoWildcard2 | tee -a htbdomainslist.txt
-                    fi
-                done
-            done
-            htbdomains2=$(cat htbdomainslist.txt | sort -u)
-            if [[ -s htbdomainslist.txt ]]; then
-                for htbdomain2 in $htbdomains2; do
-                    dig -x $rhost | tee dig-$rhost.log
-                    dig axfr @$rhost $htbdomain2 | tee dig-zone-xfer-$htbdomain2.log
-                    echo -e "${DOPE} Running: Dnsrecon ${DOPE} dnsrecon -d $htbdomain2"
-                    dnsrecon -d $htbdomain2 | tee dnsrecon-$rhost-$htbdomain2.log
-                    echo -e "${DOPE} Manual Command to Run: wfuzz ${DOPE} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H 'Host: FUZZ.$htbdomain2' "
-                    # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
-                done
-            fi
-        fi
-        if [[ -s htbdomainslist.txt ]]; then
-            urldomains=$(cat htbdomainslist.txt)
-            for urldomain in $urldomains; do
-                echo "http://$urldomain:$port1" | tee -a aquaurls.txt
-                echo "https://$urldomain:$port1" | tee -a aquaurls.txt
-            done
-        fi
-        if [[ -s aquaurls.txt ]]; then
-            cat aquaurls.txt | sort -u | aquatone -ports $port1 -out dns_aquatone_$port1
-        fi
-    done
-    portfilenameSSL2=openportsSSL-$rhost.txt
-    # echo $portfilenameSSL
-    httpPortsLinesSSL2=$(cat $portfilenameSSL2)
-    cwd=$(pwd)
-    for sslport in $httpPortsLinesSSL2; do
-        echo -e "${DOPE} Checking for Client Cert ${DOPE} openssl s_client -connect $rhost:$sslport"
-        openssl s_client -connect $rhost:$port >opensslClient-$rhost-$sslport.log 2>/dev/null
-        if [[ -s opensslClient-$rhost-$sslport.log ]]; then
-            sed -n -e 's/^.*CN = //p' opensslClient-$rhost-$sslport.log >/tmp/CN_INFO_$sslport.log
-            sed -n -e 's/^.*= //p' /tmp/CN_INFO_$sslport.log >emails_$sslport.txt
-            cat /tmp/CN_INFO_$sslport.log | awk '{print $1}' | sort -u >/tmp/possibleHtbDomain.txt
-            if [[ -s /tmp/possibleHtbDomain.txt ]]; then
-                possibleHtbDomain=$(cat /tmp/possibleHtbDomain.txt | grep -i ".htb")
-                for line in $possibleHtbDomain; do
-                    getPossibleHtbDomain=$(echo $line)
-                    removeComma=$(echo "${getPossibleHtbDomain::-1}")
-                    echo $removeComma >>/tmp/HTB_DOMAIN.txt
-                done
-                if [[ -s /tmp/HTB_DOMAIN.txt ]]; then
-                    cat /tmp/HTB_DOMAIN.txt | sort -u >/tmp/sortedHTBDOMAINS.txt
-                fi
-                if [[ -s /tmp/sortedHTBDOMAINS.txt ]]; then
-                    shtbdomainsfileloop=$(cat /tmp/sortedHTBDOMAINS.txt)
-                    for dns in $shtbdomainsfileloop; do
-                        if grep -q $rhost /etc/hosts; then
-                            if grep -q $dns /etc/hosts; then
-                                :
+    if [[ -s httpports-$rhost.txt ]]; then
+        for port1 in $httpPortsLines2; do
+            curl -sSik http://$rhost:$port1 -m 10 -o homepage-source2.html &>/dev/null
+            if [[ -s homepage-source2.html ]]; then
+                if grep -q ".htb" homepage-source2.html; then
+                    htbsourcedomains=$(grep '.htb' homepage-source2.html | tr ' ' '\n' | grep ".htb" | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/" | sort -u)
+                    for htbsourcedomain in $htbsourcedomains; do
+                        if [[ -n $htbsourcedomain ]]; then
+                            if grep -q "$rhost" /etc/hosts; then
+                                if grep -q "$htbsourcedomain" /etc/hosts; then
+                                    :
+                                else
+                                    echo -e "adding $htbsourcedomain to hosts file"
+                                    sed -i $"/$rhost/ s/$/\t$htbsourcedomain/" /etc/hosts
+                                fi
                             else
-                                echo -e "adding $dns to hosts file"
-                                sed -i $"/$rhost/ s/$/\t$dns/" /etc/hosts
+                                sed -i $"3i$rhost\t$htbsourcedomain" /etc/hosts
                             fi
-                        else
-                            echo -e "${DOPE} Adding $dns to /etc/hosts file"
-                            sed -i $"3i$rhost\t$dns" /etc/hosts
                         fi
-                        echo -e "${DOPE} dig axfr @$rhost $dns"
-                        dig axfr @$rhost $dns | tee dig-axfr-$dns.log
-                        echo -e "${DOPE} dnsrecon -d $dns"
-                        dnsrecon -d $dns | tee dnsrecon-$rhost-$dns.log
-                        echo -e "${MANUALCMD} Manual Command to Run:"
-                        echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $dns -H 'Host: FUZZ.$dns' "
                     done
                 fi
             fi
+            if [[ $rhost == 127.0.0.1 ]]; then
+                :
+            elif grep -q "$rhost" /etc/hosts; then
+                htbdomains5=$(grep $rhost /etc/hosts | awk '{$1= ""; print $0}')
+                remwildcardDomains=$(echo $htbdomains5 | tr ' ' '\n')
+                for wcDomain in $remwildcardDomains; do
+                    wildcards=('*' '?' '|')
+                    for wildcard in "${wildcards[@]}"; do
+                        if [[ $wcDomain == *"${wildcard}"* ]]; then
+                            :
+                        else
+                            domainNoWildcard2=$(echo "${wcDomain#'*.'}")
+                            echo $domainNoWildcard2 | tee -a htbdomainslist.txt
+                        fi
+                    done
+                done
+                htbdomains2=$(cat htbdomainslist.txt | sort -u)
+                if [[ -s htbdomainslist.txt ]]; then
+                    for htbdomain2 in $htbdomains2; do
+                        if [[ $(grep "domain" top-open-services.txt) ]] || [[ $(grep -w "53" top-open-ports.txt) ]]; then
+                            echo -e "${DOPE} dig +tcp -p $port1 $htbdomain2 @$rhost"
+                            dig +tcp -p $port1 $htbdomain2 @"$rhost" | tee dig-$rhost.log
+                            echo -e "${DOPE} dnsrecon -d $htbdomain2 -n $rhost -a"
+                            dnsrecon -d $htbdomain2 -n $rhost -a | tee dnsrecon-$rhost-$htbdomain2.log
+                        fi
+                        echo -e "${MANUALCMD} Manual Command to Run: wfuzz "
+                        echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H 'Host: FUZZ.$htbdomain2' " | tee -a manual-commands.txt
+                        # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
+                    done
+                fi
+            fi
+            if [[ -s htbdomainslist.txt ]]; then
+                urldomains=$(cat htbdomainslist.txt)
+                for urldomain in $urldomains; do
+                    echo "http://$urldomain" >>aquaurls.txt
+                    echo "https://$urldomain" >>aquaurls.txt
+                done
+            fi
+            if [[ -s aquaurls.txt ]]; then
+                cat aquaurls.txt | sort -u | aquatone -out dns_aquatone_htb
+            fi
+        done
+    fi
+    if [[ -s openportsSSL-$rhost.txt ]]; then
+        portfilenameSSL2=openportsSSL-$rhost.txt
+        httpPortsLinesSSL2=$(cat $portfilenameSSL2)
+        cwd=$(pwd)
+        for sslport in $httpPortsLinesSSL2; do
+            #ToDo Check all pages from dirsearch for .htb domain
+            # curl -sSik https://$rhost:$sslport -m 10 -o homepage-source-$sslport.html &>/dev/null
+            echo -e "${DOPE} Checking for Client Cert "
+            echo -e "${DOPE} openssl s_client -connect $rhost:$sslport >opensslClient-$rhost-$sslport.log 2>/dev/null"
+            printf "\n" | openssl s_client -connect $rhost:$sslport >opensslClient-$rhost-$sslport.log 2>/dev/null
+            if [[ -s opensslClient-$rhost-$sslport.log ]]; then
+                sed -n -e 's/^.*CN = //p' opensslClient-$rhost-$sslport.log >/tmp/CN_INFO_$sslport.log
+                sed -n -e 's/^.*= //p' /tmp/CN_INFO_$sslport.log >emails_$sslport.txt
+                cat /tmp/CN_INFO_$sslport.log | awk '{print $1}' | sort -u >/tmp/possibleHtbDomain-$sslport.txt
+                if [[ -s /tmp/possibleHtbDomain-$sslport.txt ]]; then
+                    possibleHtbDomain=$(cat /tmp/possibleHtbDomain-$sslport.txt | grep -i ".htb")
+                    for line in $possibleHtbDomain; do
+                        getPossibleHtbDomain=$(echo $line)
+                        removeComma=$(echo "${getPossibleHtbDomain::-1}")
+                        echo $removeComma >>/tmp/HTB_DOMAIN.txt
+                    done
+                fi
+            fi
+        done
+        if [[ -s /tmp/HTB_DOMAIN.txt ]]; then
+            cat /tmp/HTB_DOMAIN.txt | sort -u >/tmp/sortedHTBDOMAINS.txt
         fi
-    done
+        if [[ -s /tmp/sortedHTBDOMAINS.txt ]]; then
+            sorthtbdomainsfileloop=$(cat /tmp/sortedHTBDOMAINS.txt)
+            for dns in $sorthtbdomainsfileloop; do
+                if grep -q $rhost /etc/hosts; then
+                    if grep -q $dns /etc/hosts; then
+                        :
+                    else
+                        echo -e "adding $dns to hosts file"
+                        sed -i $"/$rhost/ s/$/\t$dns/" /etc/hosts
+                    fi
+                else
+                    echo -e "${DOPE} Adding $dns to /etc/hosts file"
+                    sed -i $"3i$rhost\t$dns" /etc/hosts
+                fi
+                if [[ $(grep "domain" top-open-services.txt) ]] || [[ $(grep -w "53" top-open-ports.txt) ]]; then
+                    echo -e "${DOPE} dnsrecon -d $dns -n $rhost"
+                    dnsrecon -d $dns -n $rhost | tee dnsrecon-$dns-$rhost.log
+                fi
+                echo -e "${MANUALCMD} Manual Command to Run:"
+                echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $dns -H 'Host: FUZZ.$dns' "
+            done
+            axfrdomains=$(grep "$rhost" /etc/hosts | sed "s/^.*$rhost\t//p" | sort -u)
+            echo -e "${DOPE} dig axfr @"$rhost" $axfrdomains"
+            dig axfr @"$rhost" $axfrdomains
+        fi
+    fi
 
 }
 
 screenshotWEB() {
     cwd=$(pwd)
     if [[ $(grep -E 'http|BaseHTTPServer' top-open-services.txt | grep -v "proxy") ]]; then
-        cat dirsearch* | grep -v "400" | awk '{print $3}' | sort -u >screenshot-URLS.txt
-        if [[ -s screenshot-URLS.txt ]]; then
-            urlPorts=$(cat openports-web-$rhost.txt | tr '\n' ',')
-            formattedUrlPorts=$(echo "${urlPorts::-1}")
-            cat screenshot-URLS.txt | aquatone -ports $formattedUrlPorts -out WEBSCREENSHOTS
-            rm screenshot-URLS.txt
+        if [[ -s openports-web-$rhost.txt ]]; then
+            cat dirsearch* | grep -v "400" | awk '{print $3}' | sort -u >screenshot-URLS.txt
+            if [[ -s screenshot-URLS.txt ]]; then
+                urlPorts=$(cat openports-web-$rhost.txt | tr '\n' ',')
+                formattedUrlPorts=$(echo "${urlPorts::-1}")
+                cat screenshot-URLS.txt | aquatone -ports $formattedUrlPorts -out WEBSCREENSHOTS
+                rm screenshot-URLS.txt
+            fi
         fi
     fi
 }
@@ -837,14 +999,30 @@ screenshotWEB() {
 screenshotWEBSSL() {
     cwd=$(pwd)
     if [[ $(grep -E 'ssl/http|ssl/unknown|https' top-open-services.txt | grep -v "proxy") ]]; then
-        cat SSL-dirsearch*.txt | grep -v "400" | awk '{print $3}' | sort -u >screenshot-SSL-URLS.txt
-        if [[ -s screenshot-SSL-URLS.txt ]]; then
-            mkdir -p ScreenshotsSSL
-            urlSSLPorts=$(cat openportsSSL-$rhost.txt | tr '\n' ',')
-            formattedSSLUrlPorts=$(echo "${urlSSLPorts::-1}")
-            cat screenshot-SSL-URLS.txt | aquatone -ports $formattedSSLUrlPorts -out WEBSSLSCREENSHOTS
-            rm screenshot-SSL-URLS.txt
+        if [[ -s openportsSSL-$rhost.txt ]]; then
+            cat SSL-dirsearch* | grep -v "400" | awk '{print $3}' | sort -u >screenshot-SSL-URLS.txt
+            if [[ -s screenshot-SSL-URLS.txt ]]; then
+                urlSSLPorts=$(cat openportsSSL-$rhost.txt | tr '\n' ',')
+                formattedSSLUrlPorts=$(echo "${urlSSLPorts::-1}")
+                cat screenshot-SSL-URLS.txt | aquatone -ports $formattedSSLUrlPorts -out WEBSSLSCREENSHOTS
+                rm screenshot-SSL-URLS.txt
+            fi
         fi
+    fi
+}
+
+openInFireFox() {
+    if [[ -s WEBSCREENSHOTS/aquatone_report.html ]]; then
+        firefox WEBSCREENSHOTS/aquatone_report.html
+    fi
+    if [[ -s WEBSSLSCREENSHOTS/aquatone_report.html ]]; then
+        firefox WEBSSLSCREENSHOTS/aquatone_report.html
+    fi
+    if [[ -s dns_aquatone/aquatone_report.html ]]; then
+        firefox dns_aquatone/aquatone_report.html
+    fi
+    if [[ -s proxy_aquatone/aquatone_report.html ]]; then
+        firefox proxy_aquatone/aquatone_report.html
     fi
 }
 
@@ -937,86 +1115,95 @@ Clean_Up() {
     cd $cwd
     rm udp-scan-$rhost.txt 2>/dev/null
     rm openports-nfs.txt 2>/dev/null
+    rm domains.txt.bak 2>/dev/null
     rm openportsFTP-$rhost.txt 2>/dev/null
     rm openportsSSL-$rhost.txt 2>/dev/null
+    rm openportsSMTP-$rhost.txt 2>/dev/null
+    rm htbdomainslist.txt 2>/dev/null
     rm openports-web-$rhost.txt 2>/dev/null
     rm allopenports2-$rhost.txt 2>/dev/null
     find $cwd/ -maxdepth 1 -name '*-list.*' -exec mv {} $cwd/wordlists \;
     if [ -d $rhost-report ]; then
+        find $cwd/ -maxdepth 1 -type d -name "WEB" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "wordlists" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "oracle_default_userpass.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "accounts_multiple_lowercase.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "wpBrute.sh" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'wpscan*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'wordpress*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'wpscan*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'wordpress*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'top-*.txt' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'top-*.txt' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "sslscan-$rhost-$port.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "domain.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "sslscan-$rhost-$port.log" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "domain*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name "etc-hosts-backup2.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "smb-scan-$rhost.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "*$rhost*.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "nikto*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "urls.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "links.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "homepage-source.html" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "*$rhost*.log" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "nikto*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "urls.txt" -exec rm -f {} \;
+        find $cwd/ -maxdepth 1 -name "links.txt" -exec rm -f {} \;
+        find $cwd/ -maxdepth 1 -name "homepage-source.html" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name "*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "gowitness.db" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "aquaurls.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "emails*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "aquaurls*.txt" -exec rm -f {} \;
+        find $cwd/ -maxdepth 1 -name "emails*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "dns_aquatone*" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "enum-*.sh" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "wpBrute.sh" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "wordpressBrute.sh" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "manual-commands.txt" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-*" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/$rhost-report/ -type f -size 0 -exec rm -f {} \;
         find $cwd/ -type f -size 0 -exec rm -f {} \;
     else
         mkdir -p $rhost-report
+        find $cwd/ -maxdepth 1 -type d -name "WEB" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "*$rhost*.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -type d -name "wordlists" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "oracle_default_userpass.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "accounts_multiple_lowercase.txt" -exec mv {} $cwd/$rhost-report/wordlists/ \;
         find $cwd/ -maxdepth 1 -name "oracle*.*" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "wpBrute.sh" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'wpscan*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'wordpress*.log' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "*.html" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'wpscan*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'wordpress*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'top-*.txt' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name 'top-*.txt' -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "sslscan-$rhost-$port.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "domain.txt" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "sslscan-$rhost-$port.log" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "domain*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name "etc-hosts-backup2.txt" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "smb-scan-$rhost.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "*$rhost*.log" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "nikto*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "urls.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "links.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "homepage-source.html" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "*$rhost*.log" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "gobuster*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "nikto*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "robots*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name "urls.txt" -exec rm -f {} \;
+        find $cwd/ -maxdepth 1 -name "links.txt" -exec rm -f {} \;
+        find $cwd/ -maxdepth 1 -name "homepage-source.html" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name "*.log" -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name "gowitness.db" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "aquaurls.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -name "emails*.txt" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "dns_aquatone" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/ \;
-        find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-$rhost-*" -exec mv {} $cwd/$rhost-report/ \;
+        find $cwd/ -maxdepth 1 -name "aquaurls*.txt" -exec rm -f {} \;
+        find $cwd/ -maxdepth 1 -name "emails*.txt" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "dns_aquatone*" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "enum-*.sh" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "wpBrute.sh" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "wordpressBrute.sh" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "manual-commands.txt" -exec mv {} $cwd/manual-commands/ \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSCREENSHOTS" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "WEBSSLSCREENSHOTS" -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -type d -name "eyewitness-report-*" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/$rhost-report/ -type f -size 0 -exec rm -f {} \;
         find $cwd/ -type f -size 0 -exec rm -f {} \;
     fi
@@ -1051,6 +1238,26 @@ show_Version() {
 EOF
 }
 
+timer() {
+
+    echo -e "${TEAL}~~~~~~~~~~~~~~~~~~~~~~~ All Scans for $rhost Completed ~~~~~~~~~~~~~~~~~~~~~~~${END}"
+    echo ""
+
+    if (($SECONDS > 3600)); then
+        hours=SECONDS/3600
+        let "minutes=(SECONDS%3600)/60"
+        let "seconds=(SECONDS%3600)%60"
+        echo -e "${DOPE} Scans Completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
+    elif (($SECONDS > 60)); then
+        let "minutes=(SECONDS%3600)/60"
+        let "seconds=(SECONDS%3600)%60"
+        echo -e "${DOPE} Scans Completed in $minutes minute(s) and $seconds second(s)"
+    else
+        echo -e "${DOPE} Scans Completed in $SECONDS seconds"
+    fi
+    echo -e ""
+}
+
 Remaining_Hosts_All_Scans() {
     echo -e "$rhost is the current RHOST!"
     grep -v $rhost live-hosts-ip.txt >remaining-hosts-to-scan.txt
@@ -1083,11 +1290,14 @@ Remaining_Hosts_All_Scans() {
             set -- "$target" "${@:3}"
             rhost=$target
             ftp_scan
+            smtp_enum
             nfs_enum
             screenshotWEB
             screenshotWEBSSL
+            openInFireFox
             Intense_Nmap_UDP_Scan
             Enum_SMB
+            rpc_enum
             ldap_enum
             cups_enum
             java_rmi_scan
@@ -1096,6 +1306,7 @@ Remaining_Hosts_All_Scans() {
             vulnscan
             Enum_Oracle
             Clean_Up
+            timer
         fi
 
     done
@@ -1104,28 +1315,78 @@ Remaining_Hosts_All_Scans() {
     rm remaininghosts.txt
 }
 
+timer2() {
+
+    echo -e "${TEAL}~~~~~~~~~~~~~~~~~~~~~~~ All Scans Completed ~~~~~~~~~~~~~~~~~~~~~~~${END}"
+    echo ""
+
+    if (($SECONDS > 3600)); then
+        hours=SECONDS/3600
+        let "minutes=(SECONDS%3600)/60"
+        let "seconds=(SECONDS%3600)%60"
+        echo -e "${DOPE} All Scans Completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
+    elif (($SECONDS > 60)); then
+        let "minutes=(SECONDS%3600)/60"
+        let "seconds=(SECONDS%3600)%60"
+        echo -e "${DOPE} All Scans Completed in $minutes minute(s) and $seconds second(s)"
+    else
+        echo -e "${DOPE} All Scans Completed in $SECONDS seconds"
+    fi
+    echo -e ""
+}
+
 PeaceOut() {
     cat <<"EOF"
-   :::::::::::''  ''::'      '::::::  `:::::::::::::'.:::::::::::::::
-   :::::::::' :. :  :         ::::::  :::::::::::.:::':::::::::::::::
-   ::::::::::  :   :::.       :::::::::::::..::::'     :::: : :::::::
-   ::::::::    :':  "::'     '"::::::::::::: :'           '' ':::::::
-   :'        : '   :  ::    .::::::::'    '                        .:
-   :               :  .:: .::. ::::'                              :::
-   :. .,.        :::  ':::::::::::.: '                      .:...::::
-   :::::::.      '     .::::::: '''                         :: :::::.
-   ::::::::            ':::::::::  '',            '    '   .:::::::::
-   ::::::::.        :::::::::::: '':,:   '    :         ''' :::::::::
-   ::::::::::      ::::::::::::'                        :::::::::::::
-   : .::::::::.   .:''::::::::    '         ::   :   '::.::::::::::::
-   :::::::::::::::. '  '::::::.  '  '     :::::.:.:.:.:.:::::::::::::
-   :::::::::::::::: :     ':::::::::   ' ,:::::::::: : :.:'::::::::::
-   ::::::::::::::::: '     :::::::::   . :'::::::::::::::' ':::::::::
-   ::::::::::::::::::''   :::::::::: :' : ,:::::::::::'      ':::::::
-   :::::::::::::::::'   .::::::::::::  ::::::::::::::::       :::::::
-   :::::::::::::::::. .::::::::::::::::::::::::::::::::::::.'::::::::
-   :::::::::::::::::' :::::::::::::::::::::::::::::::::::::::::::::::
-   ::::::::::::::::::.:::::::::::::::::::::::::::::::::::::::::::::::
+                          8888  8888888
+                   888888888888888888888888
+                8888:::8888888888888888888888888
+              8888::::::8888888888888888888888888888
+             88::::::::888:::8888888888888888888888888
+           88888888::::8:::::::::::88888888888888888888
+         888 8::888888::::::::::::::::::88888888888   888
+            88::::88888888::::m::::::::::88888888888    8
+          888888888888888888:M:::::::::::8888888888888
+         88888888888888888888::::::::::::M88888888888888
+         8888888888888888888888:::::::::M8888888888888888
+          8888888888888888888888:::::::M888888888888888888
+         8888888888888888::88888::::::M88888888888888888888
+       88888888888888888:::88888:::::M888888888888888   8888
+      88888888888888888:::88888::::M::;o*M*o;888888888    88
+     88888888888888888:::8888:::::M:::::::::::88888888    8
+    88888888888888888::::88::::::M:;:::::::::::888888888
+   8888888888888888888:::8::::::M::aAa::::::::M8888888888       8
+   88   8888888888::88::::8::::M:::::::::::::888888888888888 8888
+  88  88888888888:::8:::::::::M::::::::::;::88:88888888888888888
+  8  8888888888888:::::::::::M::"@@@@@@@"::::8w8888888888888888
+   88888888888:888::::::::::M:::::"@a@":::::M8i888888888888888
+  8888888888::::88:::::::::M88:::::::::::::M88z88888888888888888
+ 8888888888:::::8:::::::::M88888:::::::::MM888!888888888888888888
+ 888888888:::::8:::::::::M8888888MAmmmAMVMM888*88888888   88888888
+ 888888 M:::::::::::::::M888888888:::::::MM88888888888888   8888888
+ 8888   M::::::::::::::M88888888888::::::MM888888888888888    88888
+  888   M:::::::::::::M8888888888888M:::::mM888888888888888    8888
+   888  M::::::::::::M8888:888888888888::::m::Mm88888 888888   8888
+    88  M::::::::::::8888:88888888888888888::::::Mm8   88888   888
+    88  M::::::::::8888M::88888::888888888888:::::::Mm88888    88
+    8   MM::::::::8888M:::8888:::::888888888888::::::::Mm8     4
+        8M:::::::8888M:::::888:::::::88:::8888888::::::::Mm    2
+       88MM:::::8888M:::::::88::::::::8:::::888888:::M:::::M
+      8888M:::::888MM::::::::8:::::::::::M::::8888::::M::::M
+     88888M:::::88:M::::::::::8:::::::::::M:::8888::::::M::M
+    88 888MM:::888:M:::::::::::::::::::::::M:8888:::::::::M:
+    8 88888M:::88::M:::::::::::::::::::::::MM:88::::::::::::M
+      88888M:::88::M::::::::::*88*::::::::::M:88::::::::::::::M
+     888888M:::88::M:::::::::88@@88:::::::::M::88::::::::::::::M
+     888888MM::88::MM::::::::88@@88:::::::::M:::8::::::::::::::*8
+     88888  M:::8::MM:::::::::*88*::::::::::M:::::::::::::::::88@@
+     8888   MM::::::MM:::::::::::::::::::::MM:::::::::::::::::88@@
+      888    M:::::::MM:::::::::::::::::::MM::M::::::::::::::::*8
+      888    MM:::::::MMM::::::::::::::::MM:::MM:::::::::::::::M
+       88     M::::::::MMMM:::::::::::MMMM:::::MM::::::::::::MM
+        88    MM:::::::::MMMMMMMMMMMMMMM::::::::MMM::::::::MMM
+         88    MM::::::::::::MMMMMMM::::::::::::::MMMMMMMMMM
+          88   8MM::::::::::::::::::::::::::::::::::MMMMMM
+           8   88MM::::::::::::::::::::::M:::M::::::::MM
 EOF
     echo ""
 }
@@ -1169,7 +1430,6 @@ while [[ $# -gt 0 ]]; do
         rhost="$1"
         validate_IP
         banner1 0
-        getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
         Web_Proxy_Scan 0
@@ -1177,10 +1437,13 @@ while [[ $# -gt 0 ]]; do
         Enum_Web_SSL 0
         screenshotWEB 0
         screenshotWEBSSL 0
+        openInFireFox 0
         ftp_scan 0
+        smtp_enum 0
         nfs_enum 0
         Intense_Nmap_UDP_Scan 0
         Enum_SMB 0
+        rpc_enum 0
         ldap_enum 0
         cups_enum 0
         java_rmi_scan 0
@@ -1190,6 +1453,7 @@ while [[ $# -gt 0 ]]; do
         Enum_Oracle 0
         Clean_Up 0
         PeaceOut 0
+        timer 0
         ;;
     -f | --file)
         shift
@@ -1215,10 +1479,13 @@ while [[ $# -gt 0 ]]; do
                 rhost=$target
                 screenshotWEB 0
                 screenshotWEBSSL 0
+                openInFireFox 0
                 ftp_scan 0
+                smtp_enum 0
                 nfs_enum 0
                 Intense_Nmap_UDP_Scan 0
                 Enum_SMB 0
+                rpc_enum 0
                 cups_enum 0
                 java_rmi_scan 0
                 FULL_TCP_GOOD_MEASUERE_VULN_SCAN 0
@@ -1226,11 +1493,13 @@ while [[ $# -gt 0 ]]; do
                 vulnscan 0
                 Enum_Oracle 0
                 Clean_Up 0
+                timer 0
             done
         else
             echo -e "${NOTDOPE} File must be 1 IP Address per line."
         fi
         PeaceOut 0
+        timer2 0
         ;;
     -a | --all)
         shift
@@ -1245,10 +1514,13 @@ while [[ $# -gt 0 ]]; do
         Enum_Web_SSL 0
         screenshotWEB 0
         screenshotWEBSSL 0
+        openInFireFox 0
         ftp_scan 0
+        smtp_enum 0
         nfs_enum 0
         Intense_Nmap_UDP_Scan 0
         Enum_SMB 0
+        rpc_enum 0
         ldap_enum 0
         cups_enum 0
         java_rmi_scan 0
@@ -1259,6 +1531,7 @@ while [[ $# -gt 0 ]]; do
         Clean_Up 0
         Remaining_Hosts_All_Scans 0
         PeaceOut 0
+        timer2 0
         ;;
     -H | --HTB)
         shift
@@ -1272,10 +1545,13 @@ while [[ $# -gt 0 ]]; do
         Enum_Web_SSL 0
         screenshotWEB 0
         screenshotWEBSSL 0
+        openInFireFox 0
         ftp_scan 0
+        smtp_enum 0
         nfs_enum 0
         Intense_Nmap_UDP_Scan 0
         Enum_SMB 0
+        rpc_enum 0
         ldap_enum 0
         cups_enum 0
         java_rmi_scan 0
@@ -1286,6 +1562,7 @@ while [[ $# -gt 0 ]]; do
         Enum_Oracle 0
         Clean_Up 0
         PeaceOut 0
+        timer 0
         ;;
     -v | --version)
         shift
