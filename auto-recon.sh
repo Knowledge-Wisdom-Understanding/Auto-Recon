@@ -794,7 +794,8 @@ Enum_SNMP() {
         snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
         # apt install snmp-mibs-downloader  # then comment out mibs : in /etc/snmp/snmp.conf
         if grep -q "timeout" snmpenum-$rhost.log; then
-            echo -e "${DOPE} SNMP version 1 timed-out. Trying version 2. ${DOPE} snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log"
+            echo -e "${DOPE} SNMP version 1 timed-out. Trying version 2."
+            echo -e "${DOPE} snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log"
             snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log
         else
             :
@@ -1244,42 +1245,35 @@ show_Version() {
 EOF
 }
 
-timer() {
-
-    echo -e "${TEAL}~~~~~~~~~~~~~~~~~~~~~~~ All Scans for $rhost Completed ~~~~~~~~~~~~~~~~~~~~~~~${END}"
-    echo ""
-
-    if (($SECONDS > 3600)); then
-        hours=SECONDS/3600
-        let "minutes=(SECONDS%3600)/60"
-        let "seconds=(SECONDS%3600)%60"
-        echo -e "${DOPE} Scans Completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
-    elif (($SECONDS > 60)); then
-        let "minutes=(SECONDS%3600)/60"
-        let "seconds=(SECONDS%3600)%60"
-        echo -e "${DOPE} Scans Completed in $minutes minute(s) and $seconds second(s)"
-    else
-        echo -e "${DOPE} Scans Completed in $SECONDS seconds"
-    fi
-    echo -e ""
+resetTimer() {
+    SECONDS=0
 }
 
-timer2() {
+timer() {
 
-    echo -e "${TEAL}~~~~~~~~~~~~~~~~~~~~~~~ All Scans Completed ~~~~~~~~~~~~~~~~~~~~~~~${END}"
+    echo -e "${TEAL}~~~~~~~~~~~~~~~~~~~~~~~ Scanning for $rhost Completed ~~~~~~~~~~~~~~~~~~~~~~~${END}"
     echo ""
 
-    if (($SECONDS > 3600)); then
+    duration=$((duration + SECONDS))
+    if (($SECONDS > 3600)) || (($duration > 3600)); then
         hours=SECONDS/3600
+        totalhours=$duration/3600
         let "minutes=(SECONDS%3600)/60"
         let "seconds=(SECONDS%3600)%60"
-        echo -e "${DOPE} All Scans Completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
-    elif (($SECONDS > 60)); then
+        echo -e "${DOPE} Scanning $rhost Completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
+        let "totalminutes=($duration%3600)/60"
+        let "totalseconds=($duration%3600)%60"
+        echo -e "${DOPE} All Scans Completed in $totalhours hour(s), $totalminutes minute(s) and $totalseconds second(s)"
+    elif (($SECONDS > 60)) || (($duration > 60)); then
         let "minutes=(SECONDS%3600)/60"
         let "seconds=(SECONDS%3600)%60"
-        echo -e "${DOPE} All Scans Completed in $minutes minute(s) and $seconds second(s)"
+        echo -e "${DOPE} Scanning $rhost Completed in $minutes minute(s) and $seconds second(s)"
+        let "totalminutes=($duration%3600)/60"
+        let "totalseconds=($duration%3600)%60"
+        echo -e "${DOPE} All Scans Completed in $totalminutes minute(s) and $totalseconds second(s)"
     else
-        echo -e "${DOPE} All Scans Completed in $SECONDS seconds"
+        echo -e "${DOPE} This Scan Completed in $SECONDS seconds"
+        echo -e "${DOPE} All Scans Completed in $duration seconds"
     fi
     echo -e ""
 }
@@ -1304,6 +1298,7 @@ Remaining_Hosts_All_Scans() {
             unset rhost
             set -- "$target" "${@:3}"
             rhost=$target
+            resetTimer
             Open_Ports_Scan
             Web_Vulns
             Web_Proxy_Scan
@@ -1472,6 +1467,7 @@ while [[ $# -gt 0 ]]; do
                 rhost=$target
                 validate_IP
                 banner1 0
+                resetTimer 0
                 Open_Ports_Scan 0
                 Web_Vulns 0
                 Web_Proxy_Scan 0
@@ -1512,6 +1508,7 @@ while [[ $# -gt 0 ]]; do
         rhost="$1"
         validate_IP
         banner1 0
+        resetTimer 0
         getUpHosts 0
         Open_Ports_Scan 0
         Web_Vulns 0
@@ -1537,7 +1534,7 @@ while [[ $# -gt 0 ]]; do
         Clean_Up 0
         Remaining_Hosts_All_Scans 0
         PeaceOut 0
-        timer2 0
+        timer 0
         ;;
     -H | --HTB)
         shift
