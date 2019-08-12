@@ -170,15 +170,15 @@ Enum_Web() {
             ##################################################################################
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt-x 403 --plain-text-report dirsearch-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt -x 403 -f --plain-text-report dirsearch-$rhost-$port.log
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log"
-            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist3 -x 403 --plain-text-report dirsearch-dlistsmall-$rhost-$port.log
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist -x 403 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log"
+            python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist -x 403 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log
             echo -e "${DOPE} Running nikto as a background process to speed things up."
             echo -e "${DOPE} nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &"
             nikto -ask=no -host http://$rhost:$port >niktoscan-$rhost-$port.txt 2>&1 &
             # uniscan -u http://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${MANUALCMD} uniscan -u http://$rhost:$port -qweds" | tee -a manual-commands.txt
-            echo -e "${MANUALCMD} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -e php,asp,aspx,html,txt,js -x 403 -t 80 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log" | tee -a manual-commands.txt
+            # echo -e "${MANUALCMD} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -w $wordlist -e php,asp,aspx,html,txt,js -x 403 -t 80 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log" | tee -a manual-commands.txt
             wp1=$(grep -i "WordPress" whatweb-$rhost-$port.log 2>/dev/null)
             wp2=$(grep -i "wp-" nmap/http-vuln-enum-scan.nmap)
             if [[ $wp1 ]] || [[ $wp2 ]]; then
@@ -333,7 +333,7 @@ Web_Proxy_Scan() {
             cat proxy*.log | grep -Ev "500|403|400|401|503" | awk '{print $3}' | sort -u >snProxyURLs.txt
             urlProxyPorts=$(cat http-proxy-ports-$rhost.txt | tr '\n' ',')
             formattedUrlProxyPorts=$(echo "${urlProxyPorts::-1}")
-            cat snProxyURLs.txt | aquatone -ports $formattedUrlProxyPorts -proxy http://$rhost:$proxyPort -out proxy_aquatone
+            cat snProxyURLs.txt | aquatone -ports $formattedUrlProxyPorts -proxy http://$rhost:$proxyPort -out proxy_aquatone -screenshot-timeout 40000
             rm snProxyURLs.txt
         fi
     fi
@@ -342,7 +342,7 @@ Web_Proxy_Scan() {
 dns_enum() {
     cwd=$(pwd)
     echo -e "${DOPE} dig -x $rhost"
-    dig -x $rhost | tee dig-$rhost-$port.txt
+    dig -x $rhost @"$rhost" | tee dig-$rhost-$port.txt
     cat sslscan-$rhost-$port.log | grep "Subject" | awk '{print $2}' >domain.txt
     domainName=$(grep "Subject" sslscan-$rhost-$port.log | awk '{print $2}')
     altDomainNames=$(grep "Altnames" sslscan-$rhost-$port.log | grep "Altnames" | sed 's/, DNS:/ /g' | sed -n -e 's/^.*DNS://p')
@@ -558,15 +558,15 @@ Enum_Web_SSL() {
             cd - &>/dev/null
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -f -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt -f -x 403 --plain-text-report SSL-dirsearch-$rhost-$port.log
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log"
-            python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist4 -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$rhost-$port.log
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x 403 --plain-text-report SSL-dirsearch-dlistmedium-$rhost-$port.log"
+            python3 /opt/dirsearch/dirsearch.py -u https://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist2 -x 403 --plain-text-report SSL-dirsearch-dlistmedium-$rhost-$port.log
             echo -e "${DOPE} Running nikto as a background process to speed things up"
             echo -e "${DOPE} nikto -ask=no -host https://$rhost:$port -ssl >niktoscan-$rhost-$port.txt 2>&1 &"
             nikto -ask=no -host https://$rhost:$port -ssl >niktoscan-$rhost-$port.txt 2>&1 &
             # uniscan -u https://$rhost:$port -qweds
             echo -e "${DOPE} Further Web enumeration Commands to Run: "
             echo -e "${MANUALCMD} uniscan -u https://$rhost:$port -qweds" | tee -a manual-commands.txt
-            echo -e "${MANUALCMD} gobuster dir -u https://$rhost:$port -w $wordlist2 -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k" | tee -a manual-commands.txt
+            # echo -e "${MANUALCMD} gobuster dir -u https://$rhost:$port -w $wordlist2 -l -t 80 -x .html,.php,.asp,.aspx,.txt -e -k" | tee -a manual-commands.txt
 
             if [ $(grep -i "WordPress" whatweb-ssl-$rhost-$port.log 2>/dev/null) ]; then
                 echo -e "${DOPE} Found WordPress! Running wpscan --no-update --disable-tls-checks --url https://$rhost:$port/ --wp-content-dir wp-content --enumerate vp,vt,cb,dbe,u,m --plugins-detection aggressive | tee wpscan2-$rhost-$port.log"
@@ -785,7 +785,7 @@ Enum_SNMP() {
     # echo $cwd
     cd $cwd
     if grep -q "199" top-open-ports.txt; then
-        printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
+        printf "\e[93m################### RUNNING SNMP-ENUMERATION ################################################################# \e[0m\n"
 
         echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
         onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
@@ -803,7 +803,7 @@ Enum_SNMP() {
     if ! grep -q "199" top-open-ports.txt; then
         grep -v "filtered" nmap/udp-$rhost.nmap | grep "open" | cut -d "/" -f 1 >udp-scan-$rhost.txt
         if grep -q "161" udp-scan-$rhost.txt; then
-            printf "\e[93m################### RUNNING SNMP-ENUMERATION ##################################################### \e[0m\n"
+            printf "\e[93m################### RUNNING SNMP-ENUMERATION ############################################################# \e[0m\n"
 
             echo -e "${DOPE} Running: onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log "
             onesixtyone -c /usr/share/doc/onesixtyone/dict.txt $rhost | tee -a snmpenum-$rhost.log
@@ -811,8 +811,10 @@ Enum_SNMP() {
             # echo -e "${DOPE} Running: snmp-check -c public -v 2 -d $rhost | tee -a snmpenum-scan.log "
             snmp-check -c public -v 1 -d $rhost | tee -a snmpenum-$rhost.log
             # apt install snmp-mibs-downloader  # then comment out mibs : in /etc/snmp/snmp.conf
-            if grep -q "timeout" snmpenum-$rhost.log; then
-                echo -e "${DOPE} SNMP version 1 timed-out. Trying version 2. ${DOPE} snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log"
+            lines_output=$(cat snmpenum-$rhost.log | wc -l)
+            if [[ $(grep -i "timeout" snmpenum-$rhost.log) ]] || [[ $lines_output -lt 40 ]]; then
+                echo -e "${DOPE} SNMP version 1 timed-out or didn't output enough information. Trying version 2."
+                echo -e "${DOPE} snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log"
                 snmpwalk -c public -v2c $rhost | tee -a snmpenum-$rhost.log
             else
                 :
@@ -826,8 +828,8 @@ Enum_SNMP() {
 FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
     cwd=$(pwd)
     echo -e "${DOPE} Running Full Nmap TCP port Scan"
-    echo -e "${DOPE} nmap -vv -Pn -sC -sV -p- -T4 -oA nmap/full-tcp-scan-$rhost $rhost"
-    nmap -vv -Pn -A -p- -T4 --script-timeout 10 -oA nmap/full-tcp-scan-$rhost $rhost
+    echo -e "${DOPE} nmap -vv -Pn -A -p- -T4 --script-timeout 2m -oA nmap/full-tcp-scan-$rhost $rhost"
+    nmap -vv -Pn -A -p- -T4 --script-timeout 2m -oA nmap/full-tcp-scan-$rhost $rhost
     echo -e "${YELLOW}#################################################################################################### ${END}"
     echo -e "${TEAL}########################### Checking Vulnerabilities  ############################################## ${END}"
     echo -e "${YELLOW}#################################################################################################### ${END}"
@@ -921,7 +923,7 @@ dnsCheckHTB() {
                 done
             fi
             if [[ -s aquaurls.txt ]]; then
-                cat aquaurls.txt | sort -u | aquatone -out dns_aquatone_htb
+                cat aquaurls.txt | sort -u | aquatone -out dns_aquatone_htb -screenshot-timeout 40000
             fi
         done
     fi
@@ -989,7 +991,7 @@ screenshotWEB() {
             if [[ -s screenshot-URLS.txt ]]; then
                 urlPorts=$(cat openports-web-$rhost.txt | tr '\n' ',')
                 formattedUrlPorts=$(echo "${urlPorts::-1}")
-                cat screenshot-URLS.txt | aquatone -ports $formattedUrlPorts -out WEBSCREENSHOTS
+                cat screenshot-URLS.txt | aquatone -ports $formattedUrlPorts -out WEBSCREENSHOTS -screenshot-timeout 40000
                 rm screenshot-URLS.txt
             fi
         fi
@@ -1004,7 +1006,7 @@ screenshotWEBSSL() {
             if [[ -s screenshot-SSL-URLS.txt ]]; then
                 urlSSLPorts=$(cat openportsSSL-$rhost.txt | tr '\n' ',')
                 formattedSSLUrlPorts=$(echo "${urlSSLPorts::-1}")
-                cat screenshot-SSL-URLS.txt | aquatone -ports $formattedSSLUrlPorts -out WEBSSLSCREENSHOTS
+                cat screenshot-SSL-URLS.txt | aquatone -ports $formattedSSLUrlPorts -out WEBSSLSCREENSHOTS -screenshot-timeout 40000
                 rm screenshot-SSL-URLS.txt
             fi
         fi
@@ -1012,17 +1014,21 @@ screenshotWEBSSL() {
 }
 
 openInFireFox() {
-    if [[ -s WEBSCREENSHOTS/aquatone_report.html ]]; then
-        firefox WEBSCREENSHOTS/aquatone_report.html
-    fi
-    if [[ -s WEBSSLSCREENSHOTS/aquatone_report.html ]]; then
-        firefox WEBSSLSCREENSHOTS/aquatone_report.html
-    fi
-    if [[ -s dns_aquatone/aquatone_report.html ]]; then
-        firefox dns_aquatone/aquatone_report.html
-    fi
-    if [[ -s proxy_aquatone/aquatone_report.html ]]; then
-        firefox proxy_aquatone/aquatone_report.html
+    if type -p firefox >/dev/null; then
+        if [[ -s WEBSCREENSHOTS/aquatone_report.html ]]; then
+            firefox WEBSCREENSHOTS/aquatone_report.html
+        fi
+        if [[ -s WEBSSLSCREENSHOTS/aquatone_report.html ]]; then
+            firefox WEBSSLSCREENSHOTS/aquatone_report.html
+        fi
+        if [[ -s dns_aquatone/aquatone_report.html ]]; then
+            firefox dns_aquatone/aquatone_report.html
+        fi
+        if [[ -s proxy_aquatone/aquatone_report.html ]]; then
+            firefox proxy_aquatone/aquatone_report.html
+        fi
+    else
+        :
     fi
 }
 
@@ -1134,7 +1140,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/WEB \;
-        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'wpscan*.log' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'wordpress*.log' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/WEB \;
@@ -1176,7 +1182,7 @@ Clean_Up() {
         find $cwd/ -maxdepth 1 -name "wafw00f*.log" -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'dirsearch*.*' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'whatweb*.log' -exec mv {} $cwd/$rhost-report/WEB \;
-        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/WEB \;
+        find $cwd/ -maxdepth 1 -name 'snmpenum*.log' -exec mv {} $cwd/$rhost-report/ \;
         find $cwd/ -maxdepth 1 -name 'wpscan*.log' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'wordpress*.log' -exec mv {} $cwd/$rhost-report/WEB \;
         find $cwd/ -maxdepth 1 -name 'wp-users.txt' -exec mv {} $cwd/$rhost-report/WEB \;
@@ -1258,6 +1264,26 @@ timer() {
     echo -e ""
 }
 
+timer2() {
+
+    echo -e "${TEAL}~~~~~~~~~~~~~~~~~~~~~~~ All Scans Completed ~~~~~~~~~~~~~~~~~~~~~~~${END}"
+    echo ""
+
+    if (($SECONDS > 3600)); then
+        hours=SECONDS/3600
+        let "minutes=(SECONDS%3600)/60"
+        let "seconds=(SECONDS%3600)%60"
+        echo -e "${DOPE} All Scans Completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
+    elif (($SECONDS > 60)); then
+        let "minutes=(SECONDS%3600)/60"
+        let "seconds=(SECONDS%3600)%60"
+        echo -e "${DOPE} All Scans Completed in $minutes minute(s) and $seconds second(s)"
+    else
+        echo -e "${DOPE} All Scans Completed in $SECONDS seconds"
+    fi
+    echo -e ""
+}
+
 Remaining_Hosts_All_Scans() {
     echo -e "$rhost is the current RHOST!"
     grep -v $rhost live-hosts-ip.txt >remaining-hosts-to-scan.txt
@@ -1313,26 +1339,6 @@ Remaining_Hosts_All_Scans() {
     rm myips.txt
     rm remaining-hosts-to-scan.txt
     rm remaininghosts.txt
-}
-
-timer2() {
-
-    echo -e "${TEAL}~~~~~~~~~~~~~~~~~~~~~~~ All Scans Completed ~~~~~~~~~~~~~~~~~~~~~~~${END}"
-    echo ""
-
-    if (($SECONDS > 3600)); then
-        hours=SECONDS/3600
-        let "minutes=(SECONDS%3600)/60"
-        let "seconds=(SECONDS%3600)%60"
-        echo -e "${DOPE} All Scans Completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
-    elif (($SECONDS > 60)); then
-        let "minutes=(SECONDS%3600)/60"
-        let "seconds=(SECONDS%3600)%60"
-        echo -e "${DOPE} All Scans Completed in $minutes minute(s) and $seconds second(s)"
-    else
-        echo -e "${DOPE} All Scans Completed in $SECONDS seconds"
-    fi
-    echo -e ""
 }
 
 PeaceOut() {
