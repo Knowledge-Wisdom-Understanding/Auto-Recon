@@ -1501,7 +1501,7 @@ while [[ $# -gt 0 ]]; do
             echo -e "${NOTDOPE} File must be 1 IP Address per line."
         fi
         PeaceOut 0
-        timer2 0
+        timer 0
         ;;
     -a | --all)
         shift
