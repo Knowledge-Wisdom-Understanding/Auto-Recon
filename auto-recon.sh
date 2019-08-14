@@ -679,6 +679,10 @@ rpc_enum() {
             echo -e "${DOPE} enum4linux -av $rhost" | tee -a rpc-color-scan-$rhost.log
             enum4linux -av $rhost | tee -a rpc-color-scan-$rhost.log
             sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" rpc-color-scan-$rhost.log >rpc-scan-$rhost.log
+            if type -p impacket-rpcdump >/dev/null; then
+                echo -e "${DOPE} impacket-rpcdump @$rhost"
+                impacket-rpcdump @$rhost >>rpc-scan-$rhost.log
+            fi
             rm rpc-color-scan-$rhost.log
         fi
     fi
@@ -1501,7 +1505,7 @@ while [[ $# -gt 0 ]]; do
             echo -e "${NOTDOPE} File must be 1 IP Address per line."
         fi
         PeaceOut 0
-        timer2 0
+        timer 0
         ;;
     -a | --all)
         shift
