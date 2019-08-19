@@ -325,7 +325,8 @@ Web_Proxy_Scan() {
                     cd /opt/magescan
                     proxychains bin/magescan scan:all -n http://127.0.0.1:$webPort/ | tee magento-$rhost-$webPort.log
                     cd - &>/dev/null
-                    echo -e "${DOPE} Consider crawling site: python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$webPort -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$webPort.log"
+                    echo -e "${DOPE} Consider crawling site [+]"
+                    echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$webPort -w /usr/share/seclists/Discovery/Web-Content/CMS/sitemap-magento.txt -e php,asp,aspx,txt,html -t 80 -x 403,401,404,500 --plain-text-report dirsearch-magento-$rhost-$webPort.log"
                 else
                     :
                 fi
@@ -493,8 +494,10 @@ EOF
         fi
         if [[ $domainName == *".htb"* ]]; then
             if [[ $(grep "domain" top-open-services.txt) ]] || [[ $(grep -w "53" top-open-ports.txt) ]]; then
-                echo -e "${DOPE} dnsrecon -d $domainName -n $rhost -a"
+                echo -e "${DOPE} dnsrecon -d $domainName"
                 dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log
+                echo -e "${DOPE} fierce.py --domain $domainName --dns-servers $rhost"
+                fierce.py --domain $domainName --dns-servers $rhost | tee fierce-$rhost-$domainName.log
             fi
             echo -e "${DOPE} gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log"
             gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log
@@ -847,16 +850,34 @@ dnsCheckHTB() {
         htbdomains=$(grep ".htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*commonName=//p" | cut -d "/" -f 1 | sort -u)
         htbdomains2=$(grep ".htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*Name: //p" | sort -u)
         htbdomains3=$(grep "htb" nmap/full-tcp-scan-"$rhost".nmap | sed 's/^.*| Subject Alternative Name: //p' | sed 's/, DNS:/ /g' | sed -n -e 's/^.*DNS://p' | sort -u)
-        htbdomains4=$(echo -e "$htbdomains\n$htbdomains2\n$htbdomains3" | grep -v "DNS:" | tr ' ' '\n')
+        htbdomains6=$(grep -i ".htb" nmap/full-tcp-scan-"$rhost".nmap | grep -v "SF" | sed -n -e "s/^.*http://p" | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/" | sort -u)
+        htbdomains4=$(echo -e "$htbdomains\n$htbdomains2\n$htbdomains3\n$htbdomains6" | grep -v "DNS:" | tr ' ' '\n')
         for htbdomain in $htbdomains4; do
             if [[ -n $htbdomain ]] && [[ $htbdomain == *"htb"* ]]; then
+                if [[ $htbdomain == *"www."* ]]; then
+                    echo $htbdomain >/tmp/www-$htbdomain.txt
+                    wwwRemoved=$(sed -n -e 's/^.*www.//p' /tmp/www-$htbdomain.txt)
+                    if grep -q "$rhost" /etc/hosts; then
+                        if [[ $rhost == 127.0.0.1 ]]; then
+                            :
+                        elif grep -e "$rhost.*$wwwRemoved" /etc/hosts; then
+                            :
+                        else
+                            echo -e "${DOPE} adding $wwwRemoved to hosts file"
+                            sed -i $"/$rhost/ s/$/\t$wwwRemoved/" /etc/hosts
+                        fi
+                    else
+                        echo -e "${DOPE} adding $wwwRemoved to hosts file"
+                        sed -i $"3i$rhost\t$wwwRemoved" /etc/hosts
+                    fi
+                fi
                 if grep -q "$rhost" /etc/hosts; then
                     if [[ $rhost == 127.0.0.1 ]]; then
                         :
                     elif grep -e "$rhost.*$htbdomain" /etc/hosts; then
                         :
                     else
-                        echo -e "adding $htbdomain to hosts file"
+                        echo -e "${DOPE} adding $htbdomain to hosts file"
                         sed -i $"/$rhost/ s/$/\t$htbdomain/" /etc/hosts
                     fi
                 else
@@ -905,20 +926,94 @@ dnsCheckHTB() {
                         fi
                     done
                 done
-                htbdomains2=$(cat htbdomainslist.txt | sort -u)
+                htbdomains7=$(cat htbdomainslist.txt | sort -u)
                 if [[ -s htbdomainslist.txt ]]; then
-                    for htbdomain2 in $htbdomains2; do
+                    for htbdomain2 in $htbdomains7; do
                         if [[ $(grep "domain" top-open-services.txt) ]] || [[ $(grep -w "53" top-open-ports.txt) ]]; then
-                            echo -e "${DOPE} dig +tcp -p $port1 $htbdomain2 @$rhost"
-                            dig +tcp -p $port1 $htbdomain2 @"$rhost" | tee dig-$rhost.log
-                            echo -e "${DOPE} dnsrecon -d $htbdomain2 -n $rhost -a"
-                            dnsrecon -d $htbdomain2 -n $rhost -a | tee dnsrecon-$rhost-$htbdomain2.log
+                            if [[ $htbdomain2 == *"www."* ]]; then
+                                noWwwDomain=$(sed -n -e 's/^.*www.//p' htbdomainslist.txt | head -n 1)
+                                echo -e "${DOPE} host -l $noWwwDomain $htbdomain2"
+                                host -l $noWwwDomain $htbdomain2 | tee -a hostlookup-$rhost-$noWwwDomain.log
+                                if [[ -s fierce-$rhost-$noWwwDomain.log ]]; then
+                                    :
+                                else
+                                    echo -e "${DOPE} fierce.py --domain $noWwwDomain --dns-servers $rhost"
+                                    fierce.py --domain $noWwwDomain --dns-servers $rhost | tee fierce-$rhost-$noWwwDomain.log
+                                fi
+                            else
+                                if [[ -s fierce-$rhost-$noWwwDomain.log ]]; then
+                                    :
+                                else
+                                    baseDomain=$(cat htbdomainslist.txt | sed 's/.*\.\(.*\..*\)/\1/' | sort -u)
+                                    if [[ -n $baseDomain ]]; then
+                                        for uniqBaseDomain in $baseDomain; do
+                                            if [[ -s fierce-$rhost-$uniqBaseDomain.log ]]; then
+                                                :
+                                            else
+                                                echo -e "${DOPE} fierce.py --domain $uniqBaseDomain --dns-servers $rhost"
+                                                fierce.py --domain $uniqBaseDomain --dns-servers $rhost | tee fierce-$rhost-$uniqBaseDomain.log
+                                            fi
+                                        done
+                                    fi
+                                fi
+                            fi
+
                         fi
                         echo -e "${MANUALCMD} Manual Command to Run: wfuzz "
                         echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H 'Host: FUZZ.$htbdomain2' " | tee -a manual-commands.txt
                         # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
                     done
                 fi
+                axfrdomains=$(grep "$rhost" /etc/hosts | sed -n -e $"s/^.*$rhost\t//p")
+                echo -e "${DOPE} dig axfr @$rhost $axfrdomains"
+                dig axfr @"$rhost" $axfrdomains | tee zonetransfer-$rhost.log
+                axfrdomains2=$(echo $axfrdomains | tr '\t' '\n')
+                for domain3000 in $axfrdomains2; do
+                    if grep -q $domain3000 zonetransfer-$rhost.log; then
+                        echo "yes" >>/tmp/yes.log
+                    else
+                        :
+                    fi
+                    if grep -q "yes" /tmp/yes.log; then
+                        grep -v ";" zonetransfer-$rhost.log | grep -v -e '^[[:space:]]*$' >filtered-zone-transfer-$rhost.log
+                        allDomains2=$(cat filtered-zone-transfer-$rhost.log | awk '{print $1}' | sort -u)
+                        allDomains3=$(cat filtered-zone-transfer-$rhost.log | sed -n -e 's/^.*SOA\t//p' | tr ' ' '\n' | grep ".htb" | sort -u)
+                        for dmain2 in $allDomains2; do
+                            domainDot2=$(echo $domain3000".")
+                            if [[ $domainDot2 == "$dmain2" ]]; then
+                                :
+                            else
+                                dmainMinusDot2=$(echo "${dmain2:0:-1}")
+                                if grep -q "$dmainMinusDot2" /etc/hosts; then
+                                    :
+                                elif [[ $rhost == 127.0.0.1 ]]; then
+                                    :
+                                else
+                                    sed -i $"/$rhost/ s/$/\t$dmainMinusDot2/" /etc/hosts
+                                fi
+                            fi
+                        done
+                        if [[ -n $allDomains3 ]]; then
+                            for dmain3 in $allDomains3; do
+                                domainDot3=$(echo $domain3000".")
+                                if [[ $domainDot3 == "$dmain3" ]]; then
+                                    :
+                                else
+                                    dmainMinusDot3=$(echo "${dmain3:0:-1}")
+                                    if grep -q "$dmainMinusDot3" /etc/hosts; then
+                                        :
+                                    elif [[ $rhost == 127.0.0.1 ]]; then
+                                        :
+                                    else
+                                        sed -i $"/$rhost/ s/$/\t$dmainMinusDot3/" /etc/hosts
+                                    fi
+                                fi
+                            done
+                        fi
+                        grep $rhost /etc/hosts | sed -n -e $"s/^.*$rhost\t//p" | tr '\t' '\n' >>htbdomainslist.txt
+
+                    fi
+                done
             fi
             if [[ -s htbdomainslist.txt ]]; then
                 urldomains=$(cat htbdomainslist.txt)
@@ -931,6 +1026,32 @@ dnsCheckHTB() {
                 cat aquaurls.txt | sort -u | aquatone -out dns_aquatone_htb -screenshot-timeout 40000
             fi
         done
+        if [[ -s htbdomainslist.txt ]]; then
+            loophtbdomainslist2=$(cat htbdomainslist.txt | sort -u)
+            for dnsname5 in $loophtbdomainslist2; do
+                echo -e "${MANUALCMD} Creating Manual DNS Enum Bash Script for $dnsname5"
+                cat >enum-$dnsname5.sh <<EOF
+#!/bin/bash
+
+echo -e "${DOPE} whatweb -v -a 3 http://$dnsname5 | tee whatweb-color-$dnsname5.log"
+whatweb -v -a 3 http://$dnsname5 | tee whatweb-color-$dnsname5.log
+sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-$dnsname5.log >whatweb-ssl-$dnsname5.log && rm whatweb-color-$dnsname5.log
+curl -sSik http://$dnsname5/robots.txt -m 10 -o robots-$dnsname5.txt &>/dev/null
+echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$dnsname5 -t 80 -e php,asp,aspx,txt,html -f -x 403 --plain-text-report SSL-dirsearch-$dnsname5.log"
+python3 /opt/dirsearch/dirsearch.py -u http://$dnsname5 -t 80 -e php,asp,aspx,txt -f -x 403 --plain-text-report SSL-dirsearch-$dnsname5.log
+echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$dnsname5 -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$dnsname5.log"
+python3 /opt/dirsearch/dirsearch.py -u http://$dnsname5 -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$dnsname5.log
+echo -e "${DOPE} Running nikto as a background process to speed things up"
+echo -e "${DOPE} nikto -ask=no -host http://$dnsname5 >niktoscan-$dnsname5.txt 2>&1 &"
+nikto -ask=no -host http://$dnsname5 -ssl >niktoscan-$dnsname5.txt 2>&1 &
+echo -e "${DOPE} gobuster dns -d $dnsname5 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname5.log"
+gobuster dns -d $dnsname5 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname5.log
+EOF
+                chmod +x enum-$dnsname5.sh
+
+            done
+
+        fi
     fi
     if [[ -s openportsSSL-$rhost.txt ]]; then
         portfilenameSSL2=openportsSSL-$rhost.txt
@@ -957,7 +1078,13 @@ dnsCheckHTB() {
             fi
         done
         if [[ -s /tmp/HTB_DOMAIN-$rhost.txt ]]; then
-            cat /tmp/HTB_DOMAIN-$rhost.txt | sort -u >/tmp/sortedHTBDOMAINS-$rhost.txt
+            if grep -q "www." /tmp/HTB_DOMAIN-$rhost.txt; then
+                sed -n -e "s/^.*www.//p" /tmp/HTB_DOMAIN-$rhost.txt >>/tmp/HTB_DOMAIN2-$rhost.txt
+                cat /tmp/HTB_DOMAIN2-$rhost.txt >>/tmp/HTB_DOMAIN-$rhost.txt
+                cat /tmp/HTB_DOMAIN-$rhost.txt | sort -u >/tmp/sortedHTBDOMAINS-$rhost.txt
+            else
+                cat /tmp/HTB_DOMAIN-$rhost.txt | sort -u >/tmp/sortedHTBDOMAINS-$rhost.txt
+            fi
         fi
         if [[ -s /tmp/sortedHTBDOMAINS-$rhost.txt ]]; then
             sorthtbdomainsfileloop=$(cat /tmp/sortedHTBDOMAINS-$rhost.txt)
@@ -974,15 +1101,66 @@ dnsCheckHTB() {
                     sed -i $"3i$rhost\t$dns" /etc/hosts
                 fi
                 if [[ $(grep "domain" top-open-services.txt) ]] || [[ $(grep -w "53" top-open-ports.txt) ]]; then
-                    echo -e "${DOPE} dnsrecon -d $dns -n $rhost"
-                    dnsrecon -d $dns -n $rhost | tee dnsrecon-$dns-$rhost.log
+                    if [[ $dns == *"www."* ]]; then
+                        noWwwDomain2=$(sed -n -e 's/^.*www.//p' /tmp/sortedHTBDOMAINS-$rhost.txt | head -n 1)
+                        echo -e "${DOPE} host -l $noWwwDomain2 $dns"
+                        host -l $noWwwDomain2 $dns | tee -a hostlookup-$rhost-$noWwwDomain2.log
+                        if [[ -s fierce-$rhost-$noWwwDomain2.log ]]; then
+                            :
+                        else
+                            echo -e "${DOPE} fierce.py --domain $noWwwDomain2 --dns-servers $rhost"
+                            fierce.py --domain $noWwwDomain2 --dns-servers $rhost | tee fierce-$rhost-$noWwwDomain2.log
+                        fi
+                    else
+                        if [[ -s fierce-$rhost-$noWwwDomain2.log ]]; then
+                            :
+                        else
+                            baseDomain2=$(cat /tmp/sortedHTBDOMAINS-$rhost.txt | sed 's/.*\.\(.*\..*\)/\1/' | sort -u)
+                            if [[ -n $baseDomain2 ]]; then
+                                for uniqBaseDomain2 in $baseDomain2; do
+                                    if [[ -s fierce-$rhost-$uniqBaseDomain2.log ]]; then
+                                        :
+                                    else
+                                        echo -e "${DOPE} fierce.py --domain $uniqBaseDomain2 --dns-servers $rhost"
+                                        fierce.py --domain $uniqBaseDomain2 --dns-servers $rhost | tee fierce-$rhost-$uniqBaseDomain2.log
+                                    fi
+                                done
+                            fi
+                        fi
+                    fi
                 fi
                 echo -e "${MANUALCMD} Manual Command to Run:"
                 echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $dns -H 'Host: FUZZ.$dns' "
             done
-            axfrdomains=$(grep "$rhost" /etc/hosts | sed "s/^.*$rhost\t//p" | sort -u)
-            echo -e "${DOPE} dig axfr @"$rhost" $axfrdomains"
-            dig axfr @"$rhost" $axfrdomains
+            axfrdomains=$(grep "$rhost" /etc/hosts | sed -n -e $"s/^.*$rhost\t//p")
+            echo -e "${DOPE} dig axfr @$rhost $axfrdomains"
+            dig axfr @"$rhost" $axfrdomains | tee ssl-htb-zone-transfer-$rhost.log
+        fi
+        if [[ -s /tmp/sortedHTBDOMAINS-$rhost.txt ]]; then
+            loophtbdomainslist=$(cat /tmp/sortedHTBDOMAINS-$rhost.txt)
+            for dnsname4 in $loophtbdomainslist; do
+                echo -e "${MANUALCMD} Creating Manual DNS Enum Bash Script for SSL $dnsname4"
+                cat >enum-SSL-$dnsname4.sh <<EOF
+#!/bin/bash
+
+echo -e "${DOPE} whatweb -v -a 3 https://$dnsname4 | tee whatweb-color-$dnsname4.log"
+whatweb -v -a 3 https://$dnsname4 | tee whatweb-color-$dnsname4.log
+sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" whatweb-color-$dnsname4.log >whatweb-ssl-$dnsname4.log && rm whatweb-color-$dnsname4.log
+curl -sSik https://$dnsname4/robots.txt -m 10 -o robots-$dnsname4.txt &>/dev/null
+echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$dnsname4 -t 80 -e php,asp,aspx,txt,html -f -x 403 --plain-text-report SSL-dirsearch-$dnsname4.log"
+python3 /opt/dirsearch/dirsearch.py -u https://$dnsname4 -t 80 -e php,asp,aspx,txt -f -x 403 --plain-text-report SSL-dirsearch-$dnsname4.log
+echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u https://$dnsname4 -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$dnsname4.log"
+python3 /opt/dirsearch/dirsearch.py -u https://$dnsname4 -t 80 -e php,asp,aspx,txt,html -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -x 403 --plain-text-report SSL-dirsearch-dlistsmall-$dnsname4.log
+echo -e "${DOPE} Running nikto as a background process to speed things up"
+echo -e "${DOPE} nikto -ask=no -host https://$dnsname4 -ssl >niktoscan-$dnsname4.txt 2>&1 &"
+nikto -ask=no -host https://$dnsname4 -ssl >niktoscan-$dnsname4.txt 2>&1 &
+echo -e "${DOPE} gobuster dns -d $dnsname4 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname4.log"
+gobuster dns -d $dnsname4 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname4.log
+EOF
+                chmod +x enum-SSL-$dnsname4.sh
+
+            done
+
         fi
     fi
 
@@ -1031,6 +1209,9 @@ openInFireFox() {
         fi
         if [[ -s proxy_aquatone/aquatone_report.html ]]; then
             firefox proxy_aquatone/aquatone_report.html
+        fi
+        if [[ -s dns_aquatone_htb/aquatone_report.html ]]; then
+            firefox aquatone_htb/aquatone_report.html
         fi
     else
         :
@@ -1552,7 +1733,6 @@ while [[ $# -gt 0 ]]; do
         Enum_Web_SSL 0
         screenshotWEB 0
         screenshotWEBSSL 0
-        openInFireFox 0
         ftp_scan 0
         smtp_enum 0
         nfs_enum 0
@@ -1564,6 +1744,7 @@ while [[ $# -gt 0 ]]; do
         java_rmi_scan 0
         FULL_TCP_GOOD_MEASUERE_VULN_SCAN 0
         dnsCheckHTB 0
+        openInFireFox 0
         Enum_SNMP 0
         vulnscan 0
         Enum_Oracle 0
