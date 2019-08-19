@@ -66,15 +66,23 @@ unzip -o aquatone_linux_amd64_1.7.0.zip
 apt install chromium -y
 ln -s /opt/aquatone/aquatone /usr/local/bin/aquatone
 
-echo "hopefully you have go installed and your go path configured correctly. Other-wise you'll have to install it manually if you want to use subfinder in this script etc..."
+echo "hopefully you have go installed and your go path configured correctly. Other-wise you'll have to install subfinder manually."
 go get github.com/subfinder/subfinder
 
 echo -e "${DOPE} Installing snmp-mibs-downloader. This will beautify snmp-walk output to more human readable format"
 apt install snmp-mibs-downloader -y
 sed -e '/mibs/ s/^#*/#/' -i /etc/snmp/snmp.conf
 
+echo -e "${DOPE} Installing fierce.py"
 cd /opt
-cd Auto-Recon
-chmod +x auto-recon.sh
+git clone https://github.com/mschwager/fierce.git
+cd fierce
+if type -p pip3; then
+    pip3 install -r requirements.txt
+else
+    python3 -m pip install -r requirements.txt
+fi
+ln -s /opt/fierce/fierce/fierce.py /usr/local/bin/fierce.py
 
 echo -e "${DOPE} Congratulations, All tools installed successfully!"
+
