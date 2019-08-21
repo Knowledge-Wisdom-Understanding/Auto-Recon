@@ -693,6 +693,9 @@ rpc_enum() {
 
 ldap_enum() {
     if [[ $(grep -w "ldap" top-open-services.txt) ]] || [[ $(grep -w "389" top-open-ports.txt) ]]; then
+        echo -e "${DOPE} Found LDAP! Running nmap ldap scripts"
+        echo -e "${DOPE} nmap -vv -Pn -sV -p 389 --script='(ldap* or ssl*) and not (brute or broadcast or dos or external or fuzzer)' -oA nmap/ldap-$rhost $rhost"
+        nmap -vv -Pn -sV -p 389 --script='(ldap* or ssl*) and not (brute or broadcast or dos or external or fuzzer)' -oA nmap/ldap-$rhost $rhost
         if [[ ! -s smb-scan-$rhost.log ]]; then
             echo -e "${DOPE} Found LDAP! Running Enum4Linux"
             enum4linux -a -l -v $rhost | tee ldapenum-$rhost.txt
