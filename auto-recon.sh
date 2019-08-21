@@ -168,7 +168,7 @@ Enum_Web() {
             ./EyeWitness.py --threads 5 --ocr --no-prompt --active-scan --all-protocols --web -f eyefile.txt -d $cwd/eyewitness-report-$rhost-$port
             cd - &>/dev/null
             ##################################################################################
-            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt-x 403 --plain-text-report dirsearch-$rhost-$port.log"
+            echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt-x 403 -f --plain-text-report dirsearch-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt -x 403 -f --plain-text-report dirsearch-$rhost-$port.log
             echo -e "${DOPE} python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist -x 403 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log"
             python3 /opt/dirsearch/dirsearch.py -u http://$rhost:$port -t 80 -e php,asp,aspx,txt,html -w $wordlist -x 403 --plain-text-report dirsearch-dlistmedium-$rhost-$port.log
@@ -776,6 +776,8 @@ Enum_SMB() {
         echo -e "${DOPE} Running smbmap" | tee -a smb-color-scan-$rhost.log
         echo -e "${DOPE} smbmap -H $rhost" | tee -a smb-color-scan-$rhost.log
         smbmap -H $rhost | tee -a smb-color-scan-$rhost.log
+        echo -e "${DOPE} smbmap -H $rhost -R" | tee -a smb-color-scan-$rhost.log
+        smbmap -H $rhost -R | tee -a smb-color-scan-$rhost.log
         echo -e "${DOPE} smbmap -u null -p '' -H $rhost" | tee -a smb-color-scan-$rhost.log
         smbmap -u null -p "" -H $rhost | tee -a smb-color-scan-$rhost.log
         echo -e "${DOPE} smbmap -u null -p '' -H $rhost -R" | tee -a smb-color-scan-$rhost.log
@@ -847,11 +849,12 @@ FULL_TCP_GOOD_MEASUERE_VULN_SCAN() {
 
 dnsCheckHTB() {
     if grep -q ".htb" nmap/full-tcp-scan-$rhost.nmap; then
-        htbdomains=$(grep ".htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*commonName=//p" | cut -d "/" -f 1 | sort -u)
-        htbdomains2=$(grep ".htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*Name: //p" | sort -u)
+        htbdomains=$(grep "htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*commonName=//p" | cut -d "/" -f 1 | sort -u)
+        htbdomains2=$(grep "htb" nmap/full-tcp-scan-"$rhost".nmap | sed -n -e "s/^.*Name: //p" | sort -u)
+        htbdomains8=$(sed -n -e 's/^.*Domain: //p' nmap/full-tcp-scan-"$rhost".nmap | cut -d ',' -f 1 | sort -u)
         htbdomains3=$(grep "htb" nmap/full-tcp-scan-"$rhost".nmap | sed 's/^.*| Subject Alternative Name: //p' | sed 's/, DNS:/ /g' | sed -n -e 's/^.*DNS://p' | sort -u)
         htbdomains6=$(grep -i ".htb" nmap/full-tcp-scan-"$rhost".nmap | grep -v "SF" | sed -n -e "s/^.*http://p" | sed -e "s/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/" | sort -u)
-        htbdomains4=$(echo -e "$htbdomains\n$htbdomains2\n$htbdomains3\n$htbdomains6" | grep -v "DNS:" | tr ' ' '\n')
+        htbdomains4=$(echo -e "$htbdomains\n$htbdomains2\n$htbdomains3\n$htbdomains6\n$htbdomains8" | grep -v "DNS:" | tr ' ' '\n')
         for htbdomain in $htbdomains4; do
             if [[ -n $htbdomain ]] && [[ $htbdomain == *"htb"* ]]; then
                 if [[ $htbdomain == *"www."* ]]; then
