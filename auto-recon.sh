@@ -340,7 +340,7 @@ Web_Proxy_Scan() {
     fi
 }
 
-dns_enum() {
+ssl_dns_enum() {
     cwd=$(pwd)
     echo -e "${DOPE} dig -x $rhost"
     dig -x $rhost @"$rhost" | tee dig-$rhost-$port.txt
@@ -496,8 +496,8 @@ EOF
             if [[ $(grep "domain" top-open-services.txt) ]] || [[ $(grep -w "53" top-open-ports.txt) ]]; then
                 echo -e "${DOPE} dnsrecon -d $domainName"
                 dnsrecon -d $domainName | tee dnsrecon-$rhost-$domainName.log
-                echo -e "${DOPE} fierce.py --domain $domainName --dns-servers $rhost"
-                fierce.py --domain $domainName --dns-servers $rhost | tee fierce-$rhost-$domainName.log
+                echo -e "${DOPE} dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $domainName"
+                dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $domainName | tee dnsenum-$rhost-$domainName.log
             fi
             echo -e "${DOPE} gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log"
             gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log
@@ -513,8 +513,8 @@ EOF
             cd - &>/dev/null
             echo -e "${DOPE} subfinder -d $domainName -o "$domainName"-subfinder.log"
             subfinder -d $domainName -o "$domainName"-subfinder.log
-            echo -e "${DOPE} gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log"
-            gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$domainName.log
+            echo -e "${DOPE} gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/sortedcombined-knock-dnsrecon-fierce-reconng.txt -t 80 -o gobust-$domainName.log"
+            gobuster dns -d $domainName -w /usr/share/seclists/Discovery/DNS/sortedcombined-knock-dnsrecon-fierce-reconng.txt -t 80 -o gobust-$domainName.log
         fi
     fi
     if [[ -n "$domainName" ]] && [[ $domainName != "localhost" ]]; then
@@ -542,7 +542,7 @@ Enum_Web_SSL() {
             sslscan https://$rhost:$port | tee sslscan-color-$rhost-$port.log
             sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" sslscan-color-$rhost-$port.log >sslscan-$rhost-$port.log
             rm sslscan-color-$rhost-$port.log
-            dns_enum
+            ssl_dns_enum
             echo -e "${DOPE} whatweb -v -a 3 https://$rhost:$port | tee whatweb-color-$rhost-$port.log"
             whatweb -v -a 3 https://$rhost:$port | tee whatweb-color-$rhost-$port.log
             # Removing color from output log
@@ -968,6 +968,8 @@ dnsCheckHTB() {
                                 noWwwDomain=$(sed -n -e 's/^.*www.//p' htbdomainslist.txt | head -n 1)
                                 echo -e "${DOPE} host -l $noWwwDomain $htbdomain2"
                                 host -l $noWwwDomain $htbdomain2 | tee -a hostlookup-$rhost-$noWwwDomain.log
+                                echo -e "${DOPE} dnsenum --dnsserver $rhost --enum  -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $noWwwDomain"
+                                dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $noWwwDomain | tee -a dsnenum-$rhost-$noWwwDomain.log
                                 if [[ -s fierce-$rhost-$noWwwDomain.log ]]; then
                                     :
                                 else
@@ -981,6 +983,8 @@ dnsCheckHTB() {
                                     baseDomain=$(cat htbdomainslist.txt | sed 's/.*\.\(.*\..*\)/\1/' | sort -u)
                                     if [[ -n $baseDomain ]]; then
                                         for uniqBaseDomain in $baseDomain; do
+                                            echo -e "${DOPE} dnsenum --dnsserver $rhost --enum  -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $uniqBaseDomain"
+                                            dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $uniqBaseDomain | tee -a dsnenum-$rhost-$uniqBaseDomain.log
                                             if [[ -s fierce-$rhost-$uniqBaseDomain.log ]]; then
                                                 :
                                             else
@@ -994,8 +998,8 @@ dnsCheckHTB() {
 
                         fi
                         echo -e "${MANUALCMD} Manual Command to Run: wfuzz "
-                        echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H 'Host: FUZZ.$htbdomain2' " | tee -a manual-commands.txt
-                        # wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
+                        echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/sortedcombined-knock-dnsrecon-fierce-reconng.txt -u $htbdomain2 -H 'Host: FUZZ.$htbdomain2' " | tee -a manual-commands.txt
+                        # wfuzz -c -w /usr/share/seclists/Discovery/DNS/sortedcombined-knock-dnsrecon-fierce-reconng.txt -u $htbdomain2 -H "Host: FUZZ.$htbdomain2" --hw 717 --hc 404 -o raw | tee wfuzz-dns-$htbdomain2.txt
                     done
                 fi
                 axfrdomains=$(grep "$rhost" /etc/hosts | sed -n -e $"s/^.*$rhost\t//p")
@@ -1078,8 +1082,8 @@ python3 /opt/dirsearch/dirsearch.py -u http://$dnsname5 -t 80 -e php,asp,aspx,tx
 echo -e "${DOPE} Running nikto as a background process to speed things up"
 echo -e "${DOPE} nikto -ask=no -host http://$dnsname5 >niktoscan-$dnsname5.txt 2>&1 &"
 nikto -ask=no -host http://$dnsname5 -ssl >niktoscan-$dnsname5.txt 2>&1 &
-echo -e "${DOPE} gobuster dns -d $dnsname5 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname5.log"
-gobuster dns -d $dnsname5 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname5.log
+echo -e "${DOPE} gobuster dns -d $dnsname5 -w /usr/share/seclists/Discovery/DNS/sortedcombined-knock-dnsrecon-fierce-reconng.txt -t 80 -o gobust-$dnsname5.log"
+gobuster dns -d $dnsname5 -w /usr/share/seclists/Discovery/DNS/sortedcombined-knock-dnsrecon-fierce-reconng.txt -t 80 -o gobust-$dnsname5.log
 EOF
                 chmod +x enum-$dnsname5.sh
 
