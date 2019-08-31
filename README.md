@@ -1,4 +1,7 @@
 # AUTO-RECON
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e41306320cc3461497c787e13b41df21)](https://app.codacy.com/app/Knowledge-Wisdom-Understanding/Auto-Recon?utm_source=github.com&utm_medium=referral&utm_content=Knowledge-Wisdom-Understanding/Auto-Recon&utm_campaign=Badge_Grade_Settings)
+
 ## Quickly Enumerate a Target in Kali Linux
 
 <img src="https://github.com/Knowledge-Wisdom-Understanding/Auto-Recon/blob/master/recon.gif" />
