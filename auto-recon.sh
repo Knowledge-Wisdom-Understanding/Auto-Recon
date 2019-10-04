@@ -968,8 +968,8 @@ dnsCheckHTB() {
                                 noWwwDomain=$(sed -n -e 's/^.*www.//p' htbdomainslist.txt | head -n 1)
                                 echo -e "${DOPE} host -l $noWwwDomain $htbdomain2"
                                 host -l $noWwwDomain $htbdomain2 | tee -a hostlookup-$rhost-$noWwwDomain.log
-                                echo -e "${DOPE} dnsenum --dnsserver $rhost --enum  -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $noWwwDomain"
-                                dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $noWwwDomain | tee -a dsnenum-$rhost-$noWwwDomain.log
+                                echo -e "${DOPE} dnsenum --dnsserver $rhost --enum  -f /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -r $noWwwDomain"
+                                dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -r $noWwwDomain | tee -a dsnenum-$rhost-$noWwwDomain.log
                                 if [[ -s fierce-$rhost-$noWwwDomain.log ]]; then
                                     :
                                 else
@@ -983,8 +983,8 @@ dnsCheckHTB() {
                                     baseDomain=$(cat htbdomainslist.txt | sed 's/.*\.\(.*\..*\)/\1/' | sort -u)
                                     if [[ -n $baseDomain ]]; then
                                         for uniqBaseDomain in $baseDomain; do
-                                            echo -e "${DOPE} dnsenum --dnsserver $rhost --enum  -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $uniqBaseDomain"
-                                            dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -r $uniqBaseDomain | tee -a dsnenum-$rhost-$uniqBaseDomain.log
+                                            echo -e "${DOPE} dnsenum --dnsserver $rhost --enum  -f /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -r $uniqBaseDomain"
+                                            dnsenum --dnsserver $rhost --enum -f /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -r $uniqBaseDomain | tee -a dsnenum-$rhost-$uniqBaseDomain.log
                                             if [[ -s fierce-$rhost-$uniqBaseDomain.log ]]; then
                                                 :
                                             else
@@ -1168,7 +1168,7 @@ EOF
                     fi
                 fi
                 echo -e "${MANUALCMD} Manual Command to Run:"
-                echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -u $dns -H 'Host: FUZZ.$dns' "
+                echo -e "${MANUALCMD} wfuzz -c -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -u $dns -H 'Host: FUZZ.$dns' "
             done
             axfrdomains=$(grep "$rhost" /etc/hosts | sed -n -e $"s/^.*$rhost\t//p")
             echo -e "${DOPE} dig axfr @$rhost $axfrdomains"
@@ -1193,7 +1193,7 @@ echo -e "${DOPE} Running nikto as a background process to speed things up"
 echo -e "${DOPE} nikto -ask=no -host https://$dnsname4 -ssl >niktoscan-$dnsname4.txt 2>&1 &"
 nikto -ask=no -host https://$dnsname4 -ssl >niktoscan-$dnsname4.txt 2>&1 &
 echo -e "${DOPE} gobuster dns -d $dnsname4 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname4.log"
-gobuster dns -d $dnsname4 -w /usr/share/seclists/Discovery/DNS/subdomains-top1mil-5000.txt -t 80 -o gobust-$dnsname4.log
+gobuster dns -d $dnsname4 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -t 80 -o gobust-$dnsname4.log
 EOF
                 chmod +x enum-SSL-$dnsname4.sh
 
