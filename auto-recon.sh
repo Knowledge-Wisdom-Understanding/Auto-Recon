@@ -47,7 +47,7 @@ exitFunction() {
 
 # Error Cases
 arg=("$@")
-if [ -z $1 ]; then
+if [ -z "$1" ]; then
     exitFunction
 elif [ "$#" -lt 1 ]; then
     exitFunction
