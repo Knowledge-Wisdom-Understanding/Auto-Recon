@@ -12,20 +12,20 @@ echo -e "${DOPE} Running: apt-get update -y"
 apt-get update -y
 
 echo -e "${DOPE} Downloading dirsearch repository in /opt folder"
-cd /opt
+cd /opt || exit
 git clone https://github.com/maurosoria/dirsearch.git
 
 echo -e "${DOPE} Updating vulnscan.py"
-cd /opt
+cd /opt || exit
 git clone https://github.com/RoliSoft/ReconScan.git
-cd ReconScan
+cd ReconScan || exit
 chmod +x vulnscan.py
 ./vulnscan.py -u
 
 echo -e "${DOPE} Installing magescan and dependencies"
-cd /opt
+cd /opt || exit
 git clone https://github.com/steverobbins/magescan magescan
-cd magescan
+cd magescan || exit
 curl -sS https://getcomposer.org/installer | php
 php composer.phar install
 apt install php7.3-xml -y
@@ -35,32 +35,32 @@ apt install php7.3-curl -y
 
 echo -e "${DOPE} Installing EyeWitness"
 apt install eyewitness -y
-cd /opt
+cd /opt || exit
 git clone https://github.com/FortyNorthSecurity/EyeWitness.git
-cd EyeWitness && cd setup
+cd EyeWitness && cd setup || exit
 chmod +x setup.sh
 ./setup.sh
 
 echo -e "${DOPE} Installing ODAT"
 apt install odat -y
-cd /opt
+cd /opt || exit
 git clone https://github.com/quentinhardy/odat.git
 
 echo -e "${DOPE} Installing Nmap Vulners & Vulscan scripts"
-cd /usr/share/nmap/scripts/
+cd /usr/share/nmap/scripts/ || exit
 git clone https://github.com/vulnersCom/nmap-vulners.git
 git clone https://github.com/scipag/vulscan.git
-cd vulscan/utilities/updater
+cd vulscan/utilities/updater || exit
 chmod +x updateFiles.sh
 ./updateFiles.sh
 
 echo -e "${DOPE} Installing Sublist3r"
-cd /opt
+cd /opt || exit
 git clone https://github.com/aboul3la/Sublist3r.git
 
-cd /opt
+cd /opt || exit
 git clone https://github.com/michenriksen/aquatone.git
-cd aquatone
+cd aquatone || exit
 wget https://github.com/michenriksen/aquatone/releases/download/v1.7.0/aquatone_linux_amd64_1.7.0.zip
 unzip -o aquatone_linux_amd64_1.7.0.zip
 apt install chromium -y
@@ -74,9 +74,9 @@ apt install snmp-mibs-downloader -y
 sed -e '/mibs/ s/^#*/#/' -i /etc/snmp/snmp.conf
 
 echo -e "${DOPE} Installing fierce.py"
-cd /opt
+cd /opt || exit
 git clone https://github.com/mschwager/fierce.git
-cd fierce
+cd fierce || exit
 if type -p pip3; then
     pip3 install -r requirements.txt
 else
@@ -85,4 +85,3 @@ fi
 ln -s /opt/fierce/fierce/fierce.py /usr/local/bin/fierce.py
 
 echo -e "${DOPE} Congratulations, All tools installed successfully!"
-
